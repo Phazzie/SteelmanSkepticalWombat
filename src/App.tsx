@@ -44,6 +44,7 @@ const MainApp = () => {
         handlePrivateSubmit,
         handleProposeSolution,
         handleSolutionSteelmanSubmit,
+        handleEmergencyWombat,
     } = useAppContext();
 
     const [inviteLink, setInviteLink] = React.useState('');

@@ -101,3 +101,5 @@ export const updateProblem = (problemId, data) => {
     const problemRef = doc(db, `artifacts/${appId}/public/data/problems/${problemId}`);
     return updateDoc(problemRef, data);
 };
+
+export { getDoc };
