@@ -15,7 +15,7 @@ import PhaseSolutionSteelman from './components/phases/PhaseSolutionSteelman';
 import PhaseWager from './components/phases/PhaseWager';
 import PhaseSolution from './components/phases/PhaseSolution';
 import PhaseResolved from './components/phases/PhaseResolved';
-import { WOMBAT_AVATAR_URL, WOMBAT_TROPHY_URL } from './constants';
+import { WOMBAT_TROPHY_URL } from './constants';
 
 const App = () => {
     return (
@@ -161,7 +161,7 @@ const MainApp = () => {
                             <button onClick={generateInviteLink} className="bg-lime-500 hover:bg-lime-600 text-gray-900 font-bold py-2 px-4 rounded-lg transition">Invite Partner</button>
                         )}
                         {user && partner && (
-                             <button onClick={() => {}} disabled={!!isAiLoading} className="bg-red-500/80 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-red-800 disabled:animate-pulse">
+                             <button onClick={handleEmergencyWombat} disabled={!!isAiLoading} className="bg-red-500/80 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-red-800 disabled:animate-pulse">
                                 {isAiLoading === 'emergency' ? 'Thinking...' : 'Emergency Wombat'}
                             </button>
                         )}

@@ -11,8 +11,9 @@ import {
     onProblemsSnapshot,
     createNewProblem,
     updateProblem,
+    getDoc,
 } from '../services/firebase';
-import { getTranslation, getAIAnalysis as getWombatAnalysis, getWager } from '../services/ai';
+import { getTranslation, getAIAnalysis as getWombatAnalysis, getWager, getBSAnalysis, getEmergencyWombat } from '../services/ai';
 
 export const AppContext = createContext(null);
 
@@ -28,7 +29,7 @@ export const AppProvider = ({ children }) => {
     useEffect(() => {
         const unsubscribe = onAuthChange(async (currentUser) => {
             if (currentUser) {
-                const unsubscribeUser = onUserSnapshot(currentUser.uid, async (snap) => {
+                onUserSnapshot(currentUser.uid, async (snap) => {
                     if (snap.exists()) {
                         const userData = snap.data();
                         setUser({ uid: currentUser.uid, ...userData });
@@ -199,7 +200,11 @@ export const AppProvider = ({ children }) => {
         isAiLoading,
         notification,
         setNotification,
-        startNewProblem: () => createNewProblem(user, partner).then(docRef => setCurrentProblem({id: docRef.id, ...docRef.data()})),
+        startNewProblem: async () => {
+            const docRef = await createNewProblem(user, partner);
+            const newProblem = { id: docRef.id, ...(await getDoc(docRef)).data() };
+            setCurrentProblem(newProblem)
+        },
         setCurrentProblem,
         updateUserName: (newName) => updateUserNameInDb(user.uid, newName),
         handleUpdate,
@@ -209,6 +214,18 @@ export const AppProvider = ({ children }) => {
         handleSteelmanSubmit,
         handleProposeSolution,
         handleSolutionSteelmanSubmit,
+        handleBSMeter: async (text) => {
+            setIsAiLoading('bs-meter');
+            const result = await getBSAnalysis(text);
+            setNotification({ show: true, message: result || "The Wombat is speechless.", type: 'info' });
+            setIsAiLoading(null);
+        },
+        handleEmergencyWombat: async () => {
+            setIsAiLoading('emergency');
+            const result = await getEmergencyWombat();
+            setNotification({ show: true, message: result || "The Wombat is on a coffee break.", type: 'info' });
+            setIsAiLoading(null);
+        },
     };
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
