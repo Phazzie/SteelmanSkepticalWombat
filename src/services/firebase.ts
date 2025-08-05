@@ -29,13 +29,14 @@ export const linkPartners = async (inviterId, inviteeId) => {
 
 export const createUserProfile = (uid) => {
     const userDocRef = doc(db, `artifacts/${appId}/users/${uid}`);
-    return setDoc(userDocRef, { uid, name: `User ${uid.substring(0,4)}` });
+    return setDoc(userDocRef, { uid, name: `User ${uid.substring(0,4)}`, partnerId: null });
 }
 
 export const updateUserName = (uid, newName) => {
     if (uid && newName) {
+        const sanitizedName = newName.trim().substring(0, 50);
         const userDocRef = doc(db, `artifacts/${appId}/users/${uid}`);
-        return updateDoc(userDocRef, { name: newName });
+        return updateDoc(userDocRef, { name: sanitizedName });
     }
 };
 
@@ -102,4 +103,4 @@ export const updateProblem = (problemId, data) => {
     return updateDoc(problemRef, data);
 };
 
-export { getDoc };
+export { getDoc, runTransaction };

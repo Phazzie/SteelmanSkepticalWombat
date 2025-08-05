@@ -1,43 +1,55 @@
-import React from 'react';
-import { AppProvider } from './context/AppContext';
-import { useAppContext } from './hooks/useAppContext';
+import React, { Suspense } from 'react';
+import { AuthProvider, AuthContext } from './context/AuthContext';
+import { ProblemProvider, ProblemContext } from './context/ProblemContext';
 import WombatAvatar from './components/ui/WombatAvatar';
 import ProgressBar from './components/ui/ProgressBar';
 import Notification from './components/ui/Notification';
-import PhaseAgreeStatement from './components/phases/PhaseAgreeStatement';
-import PhasePrivateVersion from './components/phases/PhasePrivateVersion';
-import PhaseTranslation from './components/phases/PhaseTranslation';
-import PhaseSteelman from './components/phases/PhaseSteelman';
-import PhaseSteelmanApproval from './components/phases/PhaseSteelmanApproval';
-import PhaseAIReview from './components/phases/PhaseAIReview';
-import PhaseProposeSolutions from './components/phases/PhaseProposeSolutions';
-import PhaseSolutionSteelman from './components/phases/PhaseSolutionSteelman';
-import PhaseWager from './components/phases/PhaseWager';
-import PhaseSolution from './components/phases/PhaseSolution';
-import PhaseResolved from './components/phases/PhaseResolved';
 import { WOMBAT_TROPHY_URL } from './constants';
+
+const PhaseAgreeStatement = React.lazy(() => import('./components/phases/PhaseAgreeStatement'));
+const PhasePrivateVersion = React.lazy(() => import('./components/phases/PhasePrivateVersion'));
+const PhaseTranslation = React.lazy(() => import('./components/phases/PhaseTranslation'));
+const PhaseSteelman = React.lazy(() => import('./components/phases/PhaseSteelman'));
+const PhaseSteelmanApproval = React.lazy(() => import('./components/phases/PhaseSteelmanApproval'));
+const PhaseAIReview = React.lazy(() => import('./components/phases/PhaseAIReview'));
+const PhaseProposeSolutions = React.lazy(() => import('./components/phases/PhaseProposeSolutions'));
+const PhaseSolutionSteelman = React.lazy(() => import('./components/phases/PhaseSolutionSteelman'));
+const PhaseWager = React.lazy(() => import('./components/phases/PhaseWager'));
+const PhaseSolution = React.lazy(() => import('./components/phases/PhaseSolution'));
+const PhaseResolved = React.lazy(() => import('./components/phases/PhaseResolved'));
+
+const phaseMap = {
+    agree_statement: PhaseAgreeStatement,
+    private_versions: PhasePrivateVersion,
+    translation: PhaseTranslation,
+    steelman: PhaseSteelman,
+    steelman_approval: PhaseSteelmanApproval,
+    ai_review: PhaseAIReview,
+    propose_solutions: PhaseProposeSolutions,
+    solution_steelman: PhaseSolutionSteelman,
+    wager: PhaseWager,
+    solution: PhaseSolution,
+    resolved: PhaseResolved,
+};
 
 const App = () => {
     return (
-        <AppProvider>
-            <MainApp />
-        </AppProvider>
+        <AuthProvider>
+            <ProblemProvider>
+                <MainApp />
+            </ProblemProvider>
+        </AuthProvider>
     );
 };
 
 const MainApp = () => {
+    const { user, partner, isLoading, notification, setNotification, updateUserName } = React.useContext(AuthContext);
     const {
-        user,
-        partner,
         problems,
         currentProblem,
-        isLoading,
         isAiLoading,
-        notification,
-        setNotification,
         startNewProblem,
         setCurrentProblem,
-        updateUserName,
         handleUpdate,
         handleAgreement,
         handleSteelmanApproval,
@@ -45,7 +57,7 @@ const MainApp = () => {
         handleProposeSolution,
         handleSolutionSteelmanSubmit,
         handleEmergencyWombat,
-    } = useAppContext();
+    } = React.useContext(ProblemContext);
 
     const [inviteLink, setInviteLink] = React.useState('');
     const [showInvite, setShowInvite] = React.useState(false);
@@ -59,71 +71,68 @@ const MainApp = () => {
     };
 
     const renderPhase = () => {
-        if (!currentProblem) return (
-             <div className="text-center p-8 sm:p-12 bg-gray-900 rounded-xl shadow-2xl flex flex-col items-center justify-center h-full border-2 border-dashed border-gray-700">
-                <WombatAvatar className="w-32 h-32 mb-4" />
-                <h2 className="text-2xl font-serif text-white">How The Wombat Works</h2>
-                <p className="text-gray-400 mt-2 mb-6 max-w-lg">This isn't therapy. It's a structured process to see if you're actually listening to each other. Select a drama from the list, or start a new one.</p>
-                <ol className="text-left space-y-3 text-gray-300">
-                    <li className="flex items-start"><span className="bg-lime-900 text-lime-300 font-bold rounded-full w-6 h-6 text-center mr-3 flex-shrink-0">1</span><span><span className="font-bold">Define the Problem:</span> You both agree on one neutral sentence.</span></li>
-                    <li className="flex items-start"><span className="bg-lime-900 text-lime-300 font-bold rounded-full w-6 h-6 text-center mr-3 flex-shrink-0">2</span><span><span className="font-bold">State Your Case:</span> Privately, you each give your side. No one sees this but the Wombat.</span></li>
-                    <li className="flex items-start"><span className="bg-lime-900 text-lime-300 font-bold rounded-full w-6 h-6 text-center mr-3 flex-shrink-0">3</span><span><span className="font-bold">Get the Translation:</span> The Wombat reveals what it thinks you *really* mean.</span></li>
-                    <li className="flex items-start"><span className="bg-lime-900 text-lime-300 font-bold rounded-full w-6 h-6 text-center mr-3 flex-shrink-0">4</span><span><span className="font-bold">Argue Their Case:</span> You each try to explain the *other* person's argument charitably.</span></li>
-                    <li className="flex items-start"><span className="bg-lime-900 text-lime-300 font-bold rounded-full w-6 h-6 text-center mr-3 flex-shrink-0">5</span><span><span className="font-bold">Approve the Summary:</span> You each confirm your partner understood your view.</span></li>
-                    <li className="flex items-start"><span className="bg-lime-900 text-lime-300 font-bold rounded-full w-6 h-6 text-center mr-3 flex-shrink-0">6</span><span><span className="font-bold">Get the Verdict:</span> The Wombat delivers its blunt, insightful analysis.</span></li>
-                    <li className="flex items-start"><span className="bg-lime-900 text-lime-300 font-bold rounded-full w-6 h-6 text-center mr-3 flex-shrink-0">7</span><span><span className="font-bold">Propose Solutions:</span> You each propose your own ideal solution.</span></li>
-                    <li className="flex items-start"><span className="bg-lime-900 text-lime-300 font-bold rounded-full w-6 h-6 text-center mr-3 flex-shrink-0">8</span><span><span className="font-bold">Explain Their Solution:</span> You each explain what you think your partner's solution means.</span></li>
-                    <li className="flex items-start"><span className="bg-lime-900 text-lime-300 font-bold rounded-full w-6 h-6 text-center mr-3 flex-shrink-0">9</span><span><span className="font-bold">See the Wager:</span> The Wombat places its bet on which solution is more realistic.</span></li>
-                    <li className="flex items-start"><span className="bg-lime-900 text-lime-300 font-bold rounded-full w-6 h-6 text-center mr-3 flex-shrink-0">10</span><span><span className="font-bold">Find a Final Solution:</span> Armed with the wager, you both agree on a concrete next step.</span></li>
-                </ol>
-            </div>
-        );
+        if (!currentProblem) {
+            return (
+                 <div className="text-center p-8 sm:p-12 bg-gray-900 rounded-xl shadow-2xl flex flex-col items-center justify-center h-full border-2 border-dashed border-gray-700">
+                    <WombatAvatar className="w-32 h-32 mb-4" />
+                    <h2 className="text-2xl font-serif text-white">How The Wombat Works</h2>
+                    <p className="text-gray-400 mt-2 mb-6 max-w-lg">This isn't therapy. It's a structured process to see if you're actually listening to each other. Select a drama from the list, or start a new one.</p>
+                    <ol className="text-left space-y-3 text-gray-300">
+                        <li className="flex items-start"><span className="bg-lime-900 text-lime-300 font-bold rounded-full w-6 h-6 text-center mr-3 flex-shrink-0">1</span><span><span className="font-bold">Define the Problem:</span> You both agree on one neutral sentence.</span></li>
+                        <li className="flex items-start"><span className="bg-lime-900 text-lime-300 font-bold rounded-full w-6 h-6 text-center mr-3 flex-shrink-0">2</span><span><span className="font-bold">State Your Case:</span> Privately, you each give your side. No one sees this but the Wombat.</span></li>
+                        <li className="flex items-start"><span className="bg-lime-900 text-lime-300 font-bold rounded-full w-6 h-6 text-center mr-3 flex-shrink-0">3</span><span><span className="font-bold">Get the Translation:</span> The Wombat reveals what it thinks you *really* mean.</span></li>
+                        <li className="flex items-start"><span className="bg-lime-900 text-lime-300 font-bold rounded-full w-6 h-6 text-center mr-3 flex-shrink-0">4</span><span><span className="font-bold">Argue Their Case:</span> You each try to explain the *other* person's argument charitably.</span></li>
+                        <li className="flex items-start"><span className="bg-lime-900 text-lime-300 font-bold rounded-full w-6 h-6 text-center mr-3 flex-shrink-0">5</span><span><span className="font-bold">Approve the Summary:</span> You each confirm your partner understood your view.</span></li>
+                        <li className="flex items-start"><span className="bg-lime-900 text-lime-300 font-bold rounded-full w-6 h-6 text-center mr-3 flex-shrink-0">6</span><span><span className="font-bold">Get the Verdict:</span> The Wombat delivers its blunt, insightful analysis.</span></li>
+                        <li className="flex items-start"><span className="bg-lime-900 text-lime-300 font-bold rounded-full w-6 h-6 text-center mr-3 flex-shrink-0">7</span><span><span className="font-bold">Propose Solutions:</span> You each propose your own ideal solution.</span></li>
+                        <li className="flex items-start"><span className="bg-lime-900 text-lime-300 font-bold rounded-full w-6 h-6 text-center mr-3 flex-shrink-0">8</span><span><span className="font-bold">Explain Their Solution:</span> You each explain what you think your partner's solution means.</span></li>
+                        <li className="flex items-start"><span className="bg-lime-900 text-lime-300 font-bold rounded-full w-6 h-6 text-center mr-3 flex-shrink-0">9</span><span><span className="font-bold">See the Wager:</span> The Wombat places its bet on which solution is more realistic.</span></li>
+                        <li className="flex items-start"><span className="bg-lime-900 text-lime-300 font-bold rounded-full w-6 h-6 text-center mr-3 flex-shrink-0">10</span><span><span className="font-bold">Find a Final Solution:</span> Armed with the wager, you both agree on a concrete next step.</span></li>
+                    </ol>
+                </div>
+            );
+        }
 
         const myRole = currentProblem.roles[user.uid];
+        const PhaseComponent = phaseMap[currentProblem.status];
 
-        let phaseComponent;
-        switch (currentProblem.status) {
-            case 'agree_statement':
-                phaseComponent = <PhaseAgreeStatement problem={currentProblem} onUpdate={handleUpdate} onAgree={handleAgreement} myRole={myRole} />;
-                break;
-            case 'private_versions':
-                phaseComponent = <PhasePrivateVersion problem={currentProblem} onSave={handleUpdate} onSubmit={handlePrivateSubmit} myRole={myRole} isAiLoading={isAiLoading} />;
-                break;
-            case 'translation':
-                phaseComponent = <PhaseTranslation problem={currentProblem} onNext={() => handleUpdate(currentProblem.id, {status: 'steelman'})} myRole={myRole} partnerName={partner?.name} />;
-                break;
-            case 'steelman':
-                phaseComponent = <PhaseSteelman problem={currentProblem} onSave={handleUpdate} onSubmit={handleSteelmanSubmit} myRole={myRole} isAiLoading={isAiLoading}/>;
-                break;
-            case 'steelman_approval':
-                phaseComponent = <PhaseSteelmanApproval problem={currentProblem} onApprove={handleSteelmanApproval} myRole={myRole} partnerName={partner?.name || 'Your Partner'} />;
-                break;
-            case 'ai_review':
-                phaseComponent = <PhaseAIReview problem={currentProblem} onNext={() => handleUpdate(currentProblem.id, { status: 'propose_solutions' })} onEscalate={() => {}} isAiLoading={isAiLoading} />;
-                break;
-            case 'propose_solutions':
-                phaseComponent = <PhaseProposeSolutions problem={currentProblem} onSave={handleUpdate} onSubmit={handleProposeSolution} myRole={myRole} />;
-                break;
-            case 'solution_steelman':
-                phaseComponent = <PhaseSolutionSteelman problem={currentProblem} onSave={handleUpdate} onSubmit={handleSolutionSteelmanSubmit} myRole={myRole} partnerName={partner?.name || 'Your Partner'} />;
-                break;
-            case 'wager':
-                 phaseComponent = <PhaseWager problem={currentProblem} onNext={() => handleUpdate(currentProblem.id, {status: 'solution'})} isAiLoading={isAiLoading} />;
-                break;
-            case 'solution':
-                phaseComponent = <PhaseSolution problem={currentProblem} onUpdate={handleUpdate} onAgree={handleAgreement} onBrainstorm={() => {}} myRole={myRole} isAiLoading={isAiLoading} />;
-                break;
-            case 'resolved':
-                phaseComponent = <PhaseResolved problem={currentProblem} onUpdate={handleUpdate} myRole={myRole} onGenerateImage={() => {}} isAiLoading={isAiLoading} mementoImage={null} onCritique={() => {}} />;
-                break;
-            default:
-                phaseComponent = <p>Unknown phase. The Wombat is confused.</p>;
+        if (!PhaseComponent) {
+            return <p>Unknown phase. The Wombat is confused.</p>;
+        }
+
+        const phaseProps = {
+            problem: currentProblem,
+            myRole,
+            isAiLoading,
+            onUpdate: handleUpdate,
+            onAgree: handleAgreement,
+            onSubmit: handlePrivateSubmit, // This will be overridden in some phases
+            onSave: handleUpdate, // for DraftTextarea
+            onNext: (status) => handleUpdate(currentProblem.id, { status }),
+            partnerName: partner?.name || 'Your Partner',
+            onApprove: handleSteelmanApproval,
+            onEscalate: () => {},
+            onGenerateImage: () => {},
+            onCritique: () => {},
+            mementoImage: null,
+        };
+
+        if (currentProblem.status === 'private_versions') {
+            phaseProps.onSubmit = handlePrivateSubmit;
+        } else if (currentProblem.status === 'steelman') {
+            phaseProps.onSubmit = handleSteelmanSubmit;
+        } else if (currentProblem.status === 'propose_solutions') {
+            phaseProps.onSubmit = handleProposeSolution;
+        } else if (currentProblem.status === 'solution_steelman') {
+            phaseProps.onSubmit = handleSolutionSteelmanSubmit;
         }
 
         return (
             <div className="bg-gray-900 p-4 sm:p-6 rounded-xl shadow-2xl border border-gray-700">
                 <ProgressBar status={currentProblem.status} />
-                {phaseComponent}
+                <Suspense fallback={<div>Loading phase...</div>}>
+                    <PhaseComponent {...phaseProps} />
+                </Suspense>
             </div>
         );
     }
