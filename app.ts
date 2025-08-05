@@ -146,8 +146,8 @@ const PhaseAgreeStatement = ({ problem, onUpdate, onAgree, myRole }) => {
                 onBlur={(e) => onUpdate(problem.id, { problem_statement: e.target.value })}
                 disabled={iHaveAgreed}
             />
-            <div className="flex justify-between items-center mt-4">
-                <button onClick={() => onAgree('problem')} disabled={iHaveAgreed} className="bg-lime-500 hover:bg-lime-600 text-gray-900 font-bold py-2 px-4 rounded-lg disabled:bg-gray-600 disabled:cursor-not-allowed transition">
+            <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-4">
+                <button onClick={() => onAgree('problem')} disabled={iHaveAgreed} className="w-full sm:w-auto bg-lime-500 hover:bg-lime-600 text-gray-900 font-bold py-2 px-4 rounded-lg disabled:bg-gray-600 disabled:cursor-not-allowed transition">
                     {iHaveAgreed ? "You've Agreed" : "I Agree With This Statement"}
                 </button>
                 <div className="text-sm text-gray-500">
@@ -253,8 +253,8 @@ const PhaseSteelmanApproval = ({ problem, onApprove, myRole, partnerName }) => {
                 <p className="text-sm font-bold text-gray-400 mb-2">{partnerName}'s attempt to explain your view:</p>
                 <p className="text-gray-200 whitespace-pre-wrap">{steelmanOfMyView || "Waiting for partner to write their steelman..."}</p>
             </div>
-             <div className="flex justify-between items-center mt-4">
-                <button onClick={onApprove} disabled={iHaveApproved || !steelmanOfMyView} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg disabled:bg-gray-600 transition">
+             <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-4">
+                <button onClick={onApprove} disabled={iHaveApproved || !steelmanOfMyView} className="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg disabled:bg-gray-600 transition">
                     {iHaveApproved ? "You Approved This" : "Yes, This Is Accurate"}
                 </button>
                  <div className="text-sm text-gray-500 text-right">
@@ -274,8 +274,7 @@ const PhaseAIReview = ({ problem, onNext, onEscalate, isAiLoading }) => (
         <div className="flex justify-center mb-4">
            <WombatAvatar src={WOMBAT_AVATAR_URL} />
         </div>
-        {isAiLoading === 'verdict' && <div className="text-center p-8"><div className="text-lg font-semibold animate-pulse text-lime-400">The Wombat is judging you...</div></div>}
-        
+
         {problem.human_verdict && (
             <div className="prose prose-invert text-left mt-4 p-4 bg-sky-900/50 border-2 border-dashed border-sky-400 rounded-lg whitespace-pre-wrap font-serif">
                 <h4 className="font-bold text-sky-300">A Verdict from the Human Wombat:</h4>
@@ -283,9 +282,15 @@ const PhaseAIReview = ({ problem, onNext, onEscalate, isAiLoading }) => (
             </div>
         )}
 
-        {problem.ai_analysis && !isAiLoading && (
-            <div className="prose prose-invert text-left mt-4 p-4 bg-gray-800/50 border border-gray-700 rounded-lg whitespace-pre-wrap font-serif">{problem.ai_analysis}</div>
-        )}
+        { (isAiLoading === 'verdict' || problem.ai_analysis) &&
+            <div className="prose prose-invert text-left mt-4 p-4 bg-gray-800/50 border border-gray-700 rounded-lg min-h-[12rem] flex items-center justify-center">
+                {isAiLoading === 'verdict' ? (
+                    <div className="text-lg font-semibold animate-pulse text-lime-400">The Wombat is judging you...</div>
+                ) : (
+                    <div className="whitespace-pre-wrap font-serif">{problem.ai_analysis}</div>
+                )}
+            </div>
+        }
 
         <div className="mt-6 flex flex-col sm:flex-row gap-4">
             <button onClick={onNext} className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition">
@@ -478,6 +483,7 @@ export default function App() {
     const [notification, setNotification] = useState({ show: false, message: '', type: 'info', duration: 4000 });
     const [activeTab, setActiveTab] = useState('active');
     const [mementoImage, setMementoImage] = useState(null);
+    const [isCreatingProblem, setIsCreatingProblem] = useState(false);
     
     // --- Authentication & User Profile ---
     useEffect(() => {
@@ -600,6 +606,7 @@ export default function App() {
 
     const startNewProblem = async () => {
         if (!user?.uid || !partner?.uid) return;
+        setIsCreatingProblem(true);
         const newProblem = {
             participants: [user.uid, partner.uid], roles: { [user.uid]: 'user1', [partner.uid]: 'user2' }, createdAt: new Date(),
             status: 'agree_statement', problem_statement: '', user1_agreed_problem: false, user2_agreed_problem: false,
@@ -618,6 +625,7 @@ export default function App() {
         const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/problems`), newProblem);
         setCurrentProblem({ id: docRef.id, ...newProblem });
         setActiveTab('active');
+        setIsCreatingProblem(false);
     };
 
     const handleUpdate = async (problemId, data) => {
@@ -746,6 +754,50 @@ export default function App() {
         } else {
             await handleUpdate(currentProblem.id, updates);
         }
+    };
+
+    const handleGenerateImage = async () => {
+        if (!currentProblem) return;
+        setIsAiLoading('image');
+        const prompt = `
+        **Persona:** You are a poetic and slightly surreal art director.
+        **Task:** Generate a concise, evocative, and visually rich prompt for an AI image generator (like Midjourney or DALL-E). The prompt should be a single, flowing sentence that artistically captures the emotional journey from the problem to the solution. Do not use any line breaks.
+        **Problem Statement:** "${currentProblem.problem_statement}"
+        **Solution Statement:** "${currentProblem.solution_statement}"
+        **Image Prompt:**`;
+
+        const imagePrompt = await callGemini(prompt);
+        if (imagePrompt) {
+            setNotification({ show: true, message: `Image Prompt: "${imagePrompt}"`, duration: 8000 });
+        } else {
+            setNotification({ show: true, message: "The Wombat is feeling uninspired. Try again later.", type: 'warning' });
+        }
+        setIsAiLoading(null);
+    };
+
+    const handleWombatCritique = async () => {
+        // Placeholder for now
+        setNotification({ show: true, message: "The Wombat is thinking about how to improve itself." });
+    };
+
+    const handleEscalate = async () => {
+        setNotification({ show: true, message: "This feature is for premium users only." });
+    };
+
+    const handleBrainstorm = async () => {
+        if (!currentProblem) return;
+        setIsAiLoading('brainstorm');
+        const prompt = `
+        **Persona:** You are The Skeptical Wombat. You've been asked to brainstorm solutions.
+        **Task:** Based on the problem and the failed final solution attempt, provide three distinct, concrete, and slightly unconventional brainstorming ideas. Frame them as if you're slightly annoyed you have to do this.
+        - **Problem:** "${currentProblem.problem_statement}"
+        - **Failed Solution Attempt:** "${currentProblem.solution_statement}"
+        **Brainstorming Ideas:**`;
+        const brainstormed = await callGemini(prompt);
+        if (brainstormed) {
+            await handleUpdate(currentProblem.id, { brainstormed_solutions: brainstormed });
+        }
+        setIsAiLoading(null);
     };
     
     const checkBS = async () => {
@@ -896,7 +948,9 @@ export default function App() {
                                     <button onClick={() => setActiveTab('active')} className={`py-2 px-4 font-bold ${activeTab === 'active' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'}`}>Active Dramas</button>
                                     <button onClick={() => setActiveTab('trophy')} className={`py-2 px-4 font-bold ${activeTab === 'trophy' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'}`}>Trophy Room</button>
                                 </div>
-                                <button onClick={startNewProblem} className="w-full bg-lime-500 hover:bg-lime-600 text-gray-900 font-bold py-2 px-4 rounded-lg mb-4 transition">+ New Problem</button>
+                                <button onClick={startNewProblem} disabled={isCreatingProblem} className="w-full bg-lime-500 hover:bg-lime-600 text-gray-900 font-bold py-2 px-4 rounded-lg mb-4 transition disabled:bg-gray-600 disabled:cursor-not-allowed">
+                                    {isCreatingProblem ? 'Creating...' : '+ New Problem'}
+                                </button>
                                 <div className="space-y-2 max-h-[60vh] overflow-y-auto">
                                     {problems.filter(p => activeTab === 'active' ? p.status !== 'resolved' : p.status === 'resolved').map(p => (
                                         <div key={p.id} onClick={() => setCurrentProblem(p)} className={`p-4 rounded-lg cursor-pointer transition ${currentProblem?.id === p.id ? 'bg-lime-900/50 ring-2 ring-lime-400' : 'bg-gray-800 hover:bg-gray-700'}`}>
