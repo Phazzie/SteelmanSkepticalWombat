@@ -1,6 +1,7 @@
 import {
     ChatPromptTemplate,
-    FewShotChatMessagePromptTemplate
+    FewShotChatMessagePromptTemplate,
+    MessagesPlaceholder
 } from "@langchain/core/prompts";
 import {
     StringOutputParser
@@ -11,10 +12,17 @@ import {
 import {
     RunnableSequence
 } from "@langchain/core/runnables";
+import {
+    ConversationChain
+} from "langchain/chains";
+import {
+    ConversationBufferMemory
+} from "langchain/memory";
 
 const model = new ChatGoogleGenerativeAI({
     apiKey: import.meta.env.VITE_GEMINI_API_KEY,
-    model: "gemini-1.5-flash-preview-0514",
+    model: import.meta.env.VITE_GEMINI_MODEL_NAME,
+    maxRetries: 3,
 });
 
 const wombatPersona = "You are The Skeptical Wombat. A user has submitted their private thoughts on an issue. Your job is to 'translate' it, cutting through polite language to reveal the raw, underlying feeling or demand. Be blunt, insightful, and use your dry wit. Keep it to one or two sentences.";
@@ -92,24 +100,11 @@ const bsAnalysisPrompt = new FewShotChatMessagePromptTemplate({
 });
 
 
-const emergencyWombatExamples = [{
-    input: "I need help!",
-    output: "Have you tried turning it off and on again?",
-}, {
-    input: "I'm freaking out!",
-    output: "Deep breaths. Or, you know, shallow, panicky ones. Whatever works.",
-}, ];
-
-const emergencyWombatPrompt = new FewShotChatMessagePromptTemplate({
-    prefix: "You are the Emergency Wombat. A user has clicked the emergency button. Provide a piece of generic, witty, and slightly unhelpful advice. Keep it to one or two sentences.",
-    examplePrompt: ChatPromptTemplate.fromMessages([
-        ["human", "Text: \"{input}\""],
-        ["ai", "{output}"],
-    ]),
-    examples: emergencyWombatExamples,
-    inputVariables: [],
-    templateFormat: "mustache",
-});
+const emergencyWombatPromptTemplate = ChatPromptTemplate.fromMessages([
+    new MessagesPlaceholder("history"),
+    ["human", "{input}"],
+    ["system", "You are the Emergency Wombat. A user has clicked the emergency button. Provide a piece of generic, witty, and slightly unhelpful advice. Keep it to one or two sentences."],
+]);
 
 
 const outputParser = new StringOutputParser();
@@ -129,39 +124,79 @@ const analysisChain = RunnableSequence.from([
 
 const wagerChain = wagerPrompt.pipe(model).pipe(outputParser);
 const bsAnalysisChain = bsAnalysisPrompt.pipe(model).pipe(outputParser);
-const emergencyWombatChain = emergencyWombatPrompt.pipe(model).pipe(outputParser);
 
-export const getTranslation = (text) => {
-    return translationChain.invoke({
-        text
-    });
+export const getTranslation = async (text, onChunk) => {
+    try {
+        const stream = await translationChain.stream({
+            text
+        });
+        let fullResponse = "";
+        for await (const chunk of stream) {
+            fullResponse += chunk;
+            onChunk(fullResponse);
+        }
+        return fullResponse;
+    } catch (error) {
+        console.error("Error in getTranslation:", error);
+        const errorMessage = "The Skeptical Wombat is currently unavailable. Please try again later.";
+        onChunk(errorMessage);
+        return errorMessage;
+    }
 };
 
-export const getAIAnalysis = (problem) => {
-    return analysisChain.invoke({
-        problem_statement: problem.problem_statement,
-        user1_private_version: problem.user1_private_version,
-        user2_private_version: problem.user2_private_version,
-        user1_steelman: problem.user1_steelman,
-        user2_steelman: problem.user2_steelman,
-    });
+export const getAIAnalysis = async (problem) => {
+    try {
+        return await analysisChain.invoke({
+            problem_statement: problem.problem_statement,
+            user1_private_version: problem.user1_private_version,
+            user2_private_version: problem.user2_private_version,
+            user1_steelman: problem.user1_steelman,
+            user2_steelman: problem.user2_steelman,
+        });
+    } catch (error) {
+        console.error("Error in getAIAnalysis:", error);
+        return "The Skeptical Wombat is currently unavailable. Please try again later.";
+    }
 };
 
-export const getWager = (problem, partner1Steelman) => {
-    return wagerChain.invoke({
-        user1_proposed_solution: problem.user1_proposed_solution,
-        user2_solution_steelman: problem.user2_solution_steelman,
-        user2_proposed_solution: problem.user2_proposed_solution,
-        partner1Steelman: partner1Steelman,
-    });
+export const getWager = async (problem, partner1Steelman) => {
+    try {
+        return await wagerChain.invoke({
+            user1_proposed_solution: problem.user1_proposed_solution,
+            user2_solution_steelman: problem.user2_solution_steelman,
+            user2_proposed_solution: problem.user2_proposed_solution,
+            partner1Steelman: partner1Steelman,
+        });
+    } catch (error) {
+        console.error("Error in getWager:", error);
+        return "The Skeical Wombat is currently unavailable. Please try again later.";
+    }
 }
 
-export const getBSAnalysis = (text) => {
-    return bsAnalysisChain.invoke({
-        text
-    });
+export const getBSAnalysis = async (text) => {
+    try {
+        return await bsAnalysisChain.invoke({
+            text
+        });
+    } catch (error) {
+        console.error("Error in getBSAnalysis:", error);
+        return "The Skeptical Wombat is currently unavailable. Please try again later.";
+    }
 };
 
-export const getEmergencyWombat = () => {
-    return emergencyWombatChain.invoke({});
+export const getEmergencyWombat = async (memory) => {
+    const emergencyWombatChain = new ConversationChain({
+        llm: model,
+        prompt: emergencyWombatPromptTemplate,
+        memory: memory,
+    });
+    try {
+        const result = await emergencyWombatChain.call({
+            input: "I need help!"
+        });
+        return result.response;
+    } catch (error) {
+        console.error("Error in getEmergencyWombat:", error);
+        return "The Skeptical Wombat is currently unavailable. Please try again later.";
+    }
 }

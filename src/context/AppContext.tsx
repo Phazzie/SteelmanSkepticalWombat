@@ -14,6 +14,7 @@ import {
     getDoc,
 } from '../services/firebase';
 import { getTranslation, getAIAnalysis as getWombatAnalysis, getWager, getBSAnalysis, getEmergencyWombat } from '../services/ai';
+import { ConversationBufferMemory } from "langchain/memory";
 
 export const AppContext = createContext(null);
 
@@ -25,6 +26,7 @@ export const AppProvider = ({ children }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [isAiLoading, setIsAiLoading] = useState(null);
     const [notification, setNotification] = useState({ show: false, message: '', type: 'info', duration: 4000 });
+    const [emergencyWombatMemory, setEmergencyWombatMemory] = useState(new ConversationBufferMemory());
 
     useEffect(() => {
         const unsubscribe = onAuthChange(async (currentUser) => {
@@ -129,7 +131,15 @@ export const AppProvider = ({ children }) => {
         setIsAiLoading('translation');
         const myRole = currentProblem.roles[user.uid];
         const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
-        const translationResult = await getTranslation(text);
+
+        const onChunk = (chunk) => {
+            const updates = {
+                [`${myRole}_translation`]: chunk,
+            };
+            handleUpdate(currentProblem.id, updates);
+        };
+
+        const translationResult = await getTranslation(text, onChunk);
         const updates = {
             [`${myRole}_private_version`]: text,
             [`${myRole}_submitted_private`]: true,
@@ -222,7 +232,7 @@ export const AppProvider = ({ children }) => {
         },
         handleEmergencyWombat: async () => {
             setIsAiLoading('emergency');
-            const result = await getEmergencyWombat();
+            const result = await getEmergencyWombat(emergencyWombatMemory);
             setNotification({ show: true, message: result || "The Wombat is on a coffee break.", type: 'info' });
             setIsAiLoading(null);
         },
