@@ -1,8 +1,14 @@
 import React from 'react';
+import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
+import { useAppContext } from '../../hooks/useAppContext';
 
 /** Renders UI for Phase 3: The Wombat's Translation */
-const PhaseTranslation = ({ problem, onNext, myRole, partnerName }) => {
-    const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
+const PhaseTranslation = () => {
+    const { problem, myRole, partnerRole, partnerName } = useCurrentProblemData();
+    const { handleUpdate } = useAppContext();
+
+    if (!problem) return null;
+
     return (
         <div>
             <h3 className="text-2xl font-serif text-white mb-2">Phase 3: The Wombat's Translation</h3>
@@ -23,7 +29,7 @@ const PhaseTranslation = ({ problem, onNext, myRole, partnerName }) => {
                     <p className="text-sm text-lime-200 whitespace-pre-wrap">{problem[`${partnerRole}_translation`] || "Wombat is thinking..."}</p>
                 </div>
             </div>
-            <button onClick={onNext} className="mt-6 w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition">
+            <button onClick={() => handleUpdate(problem.id, { status: 'steelman' })} className="mt-6 w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition">
                 Continue to the Next Phase
             </button>
         </div>

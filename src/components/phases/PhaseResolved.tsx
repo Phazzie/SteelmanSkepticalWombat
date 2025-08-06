@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
 import { WOMBAT_TROPHY_URL } from '../../constants';
+import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
+import { useAppContext } from '../../hooks/useAppContext';
 
 /** Renders UI for the final, resolved state, with new features. */
-const PhaseResolved = ({ problem, onUpdate, myRole, onGenerateImage, isAiLoading, mementoImage, onCritique }) => {
-    const isPostMortemTime = problem.solution_check_date && new Date() > problem.solution_check_date.toDate();
-    const myFeedback = problem[`${myRole}_post_mortem`];
+const PhaseResolved = () => {
+    const { problem } = useCurrentProblemData();
+    const { isAiLoading } = useAppContext();
     const [allowCritique, setAllowCritique] = useState(false);
+
+    if (!problem) return null;
+
+    const isPostMortemTime = problem.solution_check_date && new Date() > problem.solution_check_date.toDate();
 
     return (
         <div className="text-center p-10 space-y-8">
@@ -27,10 +33,9 @@ const PhaseResolved = ({ problem, onUpdate, myRole, onGenerateImage, isAiLoading
             <div className="border-t-2 border-dashed border-purple-500 pt-6">
                 <h3 className="text-2xl font-serif text-purple-300 mb-2">Create a Memento</h3>
                 <p className="text-gray-400 mb-4">Generate a unique AI artwork that represents your journey through this disagreement.</p>
-                <button onClick={onGenerateImage} disabled={isAiLoading === 'image'} className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition">
+                <button disabled={isAiLoading === 'image'} className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition">
                     {isAiLoading === 'image' ? 'Generating...' : 'Generate a Memento'}
                 </button>
-                {mementoImage && <img src={mementoImage} alt="AI-generated memento" className="mt-4 rounded-lg shadow-lg mx-auto" />}
             </div>
 
             {isPostMortemTime && (
@@ -47,7 +52,7 @@ const PhaseResolved = ({ problem, onUpdate, myRole, onGenerateImage, isAiLoading
                 <div className="flex items-center justify-center space-x-4 p-4 bg-gray-800 rounded-lg">
                     <input type="checkbox" id="critique-check" checked={allowCritique} onChange={(e) => setAllowCritique(e.target.checked)} className="h-6 w-6 rounded text-lime-500 focus:ring-lime-400 bg-gray-700 border-gray-600"/>
                     <label htmlFor="critique-check" className="text-gray-300">I allow the Wombat to critique this session.</label>
-                    <button onClick={() => onCritique(problem)} disabled={!allowCritique || isAiLoading === 'critique'} className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-gray-700 disabled:cursor-not-allowed">
+                    <button disabled={!allowCritique || isAiLoading === 'critique'} className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-gray-700 disabled:cursor-not-allowed">
                         {isAiLoading === 'critique' ? 'Critiquing...' : 'Submit Feedback'}
                     </button>
                 </div>

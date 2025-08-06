@@ -1,13 +1,16 @@
 import React, { useRef } from 'react';
 import DraftTextarea from '../ui/DraftTextarea';
 import { useAppContext } from '../../hooks/useAppContext';
+import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
 
 /** Renders UI for Phase 4: Writing the steelman of the partner's view. */
-const PhaseSteelman = ({ problem, onSave, onSubmit, myRole, isAiLoading }) => {
-    const { handleBSMeter } = useAppContext();
+const PhaseSteelman = () => {
+    const { problem, myRole, iHaveSubmitted, partnerHasSubmitted } = useCurrentProblemData();
+    const { handleBSMeter, handleSteelmanSubmit, handleUpdate, isAiLoading } = useAppContext();
     const textareaRef = useRef(null);
-    const iHaveSubmitted = problem[`${myRole}_submitted_steelman`];
-    const partnerHasSubmitted = problem[`${myRole === 'user1' ? 'user2' : 'user1'}_submitted_steelman`];
+
+    if (!problem) return null;
+
     return (
         <div>
             <h3 className="text-2xl font-serif text-white mb-2">Phase 4: Argue Their Case</h3>
@@ -16,8 +19,8 @@ const PhaseSteelman = ({ problem, onSave, onSubmit, myRole, isAiLoading }) => {
             <DraftTextarea
                 ref={textareaRef}
                 value={problem[`${myRole}_steelman`]}
-                onSave={(text) => onSave(problem.id, { [`${myRole}_steelman`]: text })}
-                onSubmit={onSubmit}
+                onSave={(text) => handleUpdate(problem.id, { [`${myRole}_steelman`]: text })}
+                onSubmit={handleSteelmanSubmit}
                 placeholder="I imagine my partner feels that..."
                 disabled={iHaveSubmitted}
             />

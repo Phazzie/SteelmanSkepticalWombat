@@ -1,11 +1,15 @@
 import React from 'react';
+import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
+import { useAppContext } from '../../hooks/useAppContext';
 
 /** Renders UI for Phase 5: Approving the partner's steelman. */
-const PhaseSteelmanApproval = ({ problem, onApprove, myRole, partnerName }) => {
-    const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
+const PhaseSteelmanApproval = () => {
+    const { problem, partnerRole, partnerName, iHaveApproved, partnerHasApproved } = useCurrentProblemData();
+    const { handleSteelmanApproval } = useAppContext();
+
+    if (!problem) return null;
+
     const steelmanOfMyView = problem[`${partnerRole}_steelman`];
-    const iHaveApproved = problem[`${myRole}_approved_steelman`];
-    const partnerHasApproved = problem[`${partnerRole}_approved_steelman`];
 
     return (
         <div>
@@ -16,7 +20,7 @@ const PhaseSteelmanApproval = ({ problem, onApprove, myRole, partnerName }) => {
                 <p className="text-gray-200 whitespace-pre-wrap">{steelmanOfMyView || "Waiting for partner to write their steelman..."}</p>
             </div>
              <div className="flex justify-between items-center mt-4">
-                <button onClick={onApprove} disabled={iHaveApproved || !steelmanOfMyView} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg disabled:bg-gray-600 transition">
+                <button onClick={handleSteelmanApproval} disabled={iHaveApproved || !steelmanOfMyView} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg disabled:bg-gray-600 transition">
                     {iHaveApproved ? "You Approved This" : "Yes, This Is Accurate"}
                 </button>
                  <div className="text-sm text-gray-500 text-right">

@@ -1,12 +1,23 @@
 import React from 'react';
 import DraftTextarea from '../ui/DraftTextarea';
+import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
+import { useAppContext } from '../../hooks/useAppContext';
 
 /** Renders UI for the new Phase 8: Steelmanning the partner's proposed solution. */
-const PhaseSolutionSteelman = ({ problem, onSave, onSubmit, myRole, partnerName }) => {
-    const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
+const PhaseSolutionSteelman = () => {
+    const {
+        problem,
+        myRole,
+        partnerRole,
+        partnerName,
+        iHaveSubmittedSolutionSteelman,
+        partnerHasSubmittedSolutionSteelman,
+    } = useCurrentProblemData();
+    const { handleUpdate, handleSolutionSteelmanSubmit } = useAppContext();
+
+    if (!problem) return null;
+
     const partnerSolution = problem[`${partnerRole}_proposed_solution`];
-    const iHaveSubmitted = !!problem[`${myRole}_solution_steelman`];
-    const partnerHasSubmitted = !!problem[`${partnerRole}_solution_steelman`];
 
     return (
         <div>
@@ -18,15 +29,15 @@ const PhaseSolutionSteelman = ({ problem, onSave, onSubmit, myRole, partnerName 
             </div>
             <DraftTextarea
                 value={problem[`${myRole}_solution_steelman`] || ''}
-                onSave={(text) => onSave(problem.id, { [`${myRole}_solution_steelman`]: text })}
-                onSubmit={onSubmit}
+                onSave={(text) => handleUpdate(problem.id, { [`${myRole}_solution_steelman`]: text })}
+                onSubmit={handleSolutionSteelmanSubmit}
                 placeholder={`I understand ${partnerName}'s solution to mean...`}
-                disabled={iHaveSubmitted || !partnerSolution}
+                disabled={iHaveSubmittedSolutionSteelman || !partnerSolution}
             />
             <div className="text-sm text-gray-500 mt-4">
-                {iHaveSubmitted ? "✅ Your explanation is locked." : "⏳ Waiting for you to explain their solution."}
+                {iHaveSubmittedSolutionSteelman ? "✅ Your explanation is locked." : "⏳ Waiting for you to explain their solution."}
                 <br/>
-                {partnerHasSubmitted ? "✅ Partner has explained your solution." : "⏳ Waiting for partner..."}
+                {partnerHasSubmittedSolutionSteelman ? "✅ Partner has explained your solution." : "⏳ Waiting for partner..."}
             </div>
         </div>
     );
