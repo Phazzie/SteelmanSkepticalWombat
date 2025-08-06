@@ -671,7 +671,7 @@ export default function App() {
         const myRole = currentProblem.roles[user.uid];
         const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
 
-        const translationPrompt = `You are The Skeptical Wombat. A user has submitted their private thoughts on an issue. Your job is to "translate" it, cutting through polite language to reveal the raw, underlying feeling or demand. Be blunt, insightful, and use your dry wit. Keep it to one or two sentences. Text: "${text}"`;
+        const translationPrompt = `You are the Skeptical Wombat. A user has submitted their private thoughts on an issue. Your job is to "translate" it, cutting through the polite language to reveal the raw, underlying feeling or demand. Be blunt, insightful, and use your dry, jaded wit. You are tired of seeing people make the same mistakes over and over. Keep it to one or two sentences. Text: "${text}"`;
         const translationResult = await callGemini(translationPrompt);
         
         const updates = {
@@ -700,12 +700,12 @@ export default function App() {
         if (isAiLoading) return;
         setIsAiLoading('verdict');
         const beefedUpPrompt = `
-        **Persona Lock-in:** You are The Skeptical Wombat. Your voice is essential. You are NOT a therapist.
-        **Your Goal:** To cut through the emotional fog and expose the core logical disconnect.
+        **Persona Lock-in:** You are the Skeptical Wombat. Your voice is essential. You are NOT a therapist. You are tired of this.
+        **Your Goal:** To cut through the emotional fog and expose the core logical disconnect with dry, hilarious wit. A bit of passive-aggressiveness is fine.
         **Chain of Thought:** 1. Review all data.
         2. Analyze Partner 1's steelman vs Partner 2's private version. Is it accurate or a veiled complaint?
         3. Analyze Partner 2's steelman vs Partner 1's private version.
-        4. Synthesize the Verdict: What is the *real* issue here? Frame it with a witty, sharp opening.
+        4. Synthesize the Verdict: What is the *real* issue here? Frame it with a jaded, sharp opening.
         5. Propose an Unconventional Solution: Offer a concrete, weirdly practical next step.
         **Input Data:**
         - Agreed Problem: "${problem.problem_statement}"
@@ -741,8 +741,8 @@ export default function App() {
         if (currentProblem[`${partnerRole}_solution_steelman`]) {
             setIsAiLoading('wager');
             const wagerPrompt = `
-            **Persona:** You are The Skeptical Wombat. You are blunt, realistic, and highly skeptical of starry-eyed, vague solutions.
-            **Task:** You are given two proposed solutions AND each partner's attempt to explain the other's solution. Your job is to make a "wager" on which proposal is more likely to actually work, based on its realism and whether the partners seem to actually understand each other. Be blunt and explain your reasoning with dry wit.
+            **Persona:** You are the Skeptical Wombat. You are blunt, realistic, and highly skeptical of starry-eyed, vague solutions. You've seen this all before.
+            **Task:** You are given two proposed solutions AND each partner's attempt to explain the other's solution. Your job is to make a "wager" on which proposal is more likely to actually work, based on its realism and whether the partners seem to actually understand each other. Be blunt and explain your reasoning with dry, jaded wit.
             - **Solution A (from Partner 1):** "${currentProblem.user1_proposed_solution}"
             - **Partner 2's understanding of Solution A:** "${currentProblem.user2_solution_steelman}"
             - **Solution B (from Partner 2):** "${currentProblem.user2_proposed_solution}"
@@ -765,8 +765,8 @@ export default function App() {
         setIsAiLoading('image');
         try {
             const prompt = `
-            **Persona:** You are a poetic and slightly surreal art director.
-            **Task:** Generate a concise, evocative, and visually rich prompt for an AI image generator (like Midjourney or DALL-E). The prompt should be a single, flowing sentence that artistically captures the emotional journey from the problem to the solution. Do not use any line breaks.
+            **Persona:** You are a jaded, world-weary artist.
+            **Task:** Generate a concise, evocative, and visually rich prompt for an AI image generator (like Midjourney or DALL-E). The prompt should be a single, flowing sentence that artistically captures the emotional journey from the problem to the solution, with a hint of dry wit. Do not use any line breaks.
             **Problem Statement:** "${currentProblem.problem_statement}"
             **Solution Statement:** "${currentProblem.solution_statement}"
             **Image Prompt:**`;
@@ -775,7 +775,7 @@ export default function App() {
             if (imagePrompt) {
                 setNotification({ show: true, message: `Image Prompt: "${imagePrompt}"`, duration: 8000 });
             } else {
-                setNotification({ show: true, message: "The Wombat is feeling uninspired. Try again later.", type: 'warning' });
+                setNotification({ show: true, message: "The Skeptical Wombat is feeling uninspired. Try again later.", type: 'warning' });
             }
         } finally {
             setIsAiLoading(null);
@@ -784,7 +784,7 @@ export default function App() {
 
     const handleWombatCritique = async () => {
         // Placeholder for now
-        setNotification({ show: true, message: "The Wombat is thinking about how to improve itself." });
+        setNotification({ show: true, message: "The Skeptical Wombat is thinking about how to improve itself." });
     };
 
     const handleEscalate = async () => {
@@ -796,8 +796,8 @@ export default function App() {
         setIsAiLoading('brainstorm');
         try {
             const prompt = `
-            **Persona:** You are The Skeptical Wombat. You've been asked to brainstorm solutions.
-            **Task:** Based on the problem and the failed final solution attempt, provide three distinct, concrete, and slightly unconventional brainstorming ideas. Frame them as if you're slightly annoyed you have to do this.
+            **Persona:** You are the Skeptical Wombat. You've been asked to brainstorm solutions, again.
+            **Task:** Based on the problem and the failed final solution attempt, provide three distinct, concrete, and slightly unconventional brainstorming ideas. Frame them as if you're tired of this particular merry-go-round.
             - **Problem:** "${currentProblem.problem_statement}"
             - **Failed Solution Attempt:** "${currentProblem.solution_statement}"
             **Brainstorming Ideas:**`;
