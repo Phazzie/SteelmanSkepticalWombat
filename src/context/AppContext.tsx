@@ -13,7 +13,7 @@ import {
     updateProblem,
     getDoc,
 } from '../services/firebase';
-import { getTranslation, getAIAnalysis as getWombatAnalysis, getWager, getBSAnalysis, getEmergencyWombat } from '../services/ai';
+import { getTranslation, getAIAnalysis as getWombatAnalysis, getWager, getBSAnalysis, getEmergencyWombat, getProblemSummary, getRelationshipAdvice } from '../services/ai';
 import { ConversationBufferMemory } from "langchain/memory";
 
 export const AppContext = createContext(null);
@@ -234,6 +234,18 @@ export const AppProvider = ({ children }) => {
             setIsAiLoading('emergency');
             const result = await getEmergencyWombat(emergencyWombatMemory);
             setNotification({ show: true, message: result || "The Wombat is on a coffee break.", type: 'info' });
+            setIsAiLoading(null);
+        },
+        handleGetProblemSummary: async (problem) => {
+            setIsAiLoading('summary');
+            const result = await getProblemSummary(problem);
+            setNotification({ show: true, message: result || "The Wombat is at a loss for words.", type: 'info' });
+            setIsAiLoading(null);
+        },
+        handleGetRelationshipAdvice: async (problem) => {
+            setIsAiLoading('advice');
+            const result = await getRelationshipAdvice(problem);
+            setNotification({ show: true, message: result || "The Wombat has nothing to say.", type: 'info' });
             setIsAiLoading(null);
         },
     };

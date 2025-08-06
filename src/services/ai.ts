@@ -106,6 +106,42 @@ const emergencyWombatPromptTemplate = ChatPromptTemplate.fromMessages([
     ["system", "You are the Emergency Wombat. A user has clicked the emergency button. Provide a piece of generic, witty, and slightly unhelpful advice. Keep it to one or two sentences."],
 ]);
 
+const problemSummaryPrompt = ChatPromptTemplate.fromMessages([
+    ["system", `
+    **Persona:** You are The Skeptical Wombat.
+    **Task:** Summarize the entire history of the following problem in a concise and witty manner.
+    - Agreed Problem: "{problem_statement}"
+    - P1 Private: "{user1_private_version}"
+    - P2 Private: "{user2_private_version}"
+    - P1 Steelman of P2: "{user1_steelman}"
+    - P2 Steelman of P1: "{user2_steelman}"
+    - Wombat's Analysis: "{ai_analysis}"
+    - P1 Proposed Solution: "{user1_proposed_solution}"
+    - P2 Proposed Solution: "{user2_proposed_solution}"
+    - Wombat's Wager: "{wombats_wager}"
+    - Final Solution: "{final_solution}"
+    **Summary:**`],
+    ["human", ""],
+]);
+
+const relationshipAdvicePrompt = ChatPromptTemplate.fromMessages([
+    ["system", `
+    **Persona:** You are The Skeptical Wombat.
+    **Task:** Based on the entire history of the problem, provide some blunt, insightful, and slightly pessimistic relationship advice.
+    - Agreed Problem: "{problem_statement}"
+    - P1 Private: "{user1_private_version}"
+    - P2 Private: "{user2_private_version}"
+    - P1 Steelman of P2: "{user1_steelman}"
+    - P2 Steelman of P1: "{user2_steelman}"
+    - Wombat's Analysis: "{ai_analysis}"
+    - P1 Proposed Solution: "{user1_proposed_solution}"
+    - P2 Proposed Solution: "{user2_proposed_solution}"
+    - Wombat's Wager: "{wombats_wager}"
+    - Final Solution: "{final_solution}"
+    **Advice:**`],
+    ["human", ""],
+]);
+
 
 const outputParser = new StringOutputParser();
 
@@ -124,6 +160,8 @@ const analysisChain = RunnableSequence.from([
 
 const wagerChain = wagerPrompt.pipe(model).pipe(outputParser);
 const bsAnalysisChain = bsAnalysisPrompt.pipe(model).pipe(outputParser);
+const problemSummaryChain = problemSummaryPrompt.pipe(model).pipe(outputParser);
+const relationshipAdviceChain = relationshipAdvicePrompt.pipe(model).pipe(outputParser);
 
 export const getTranslation = async (text, onChunk) => {
     try {
@@ -199,4 +237,44 @@ export const getEmergencyWombat = async (memory) => {
         console.error("Error in getEmergencyWombat:", error);
         return "The Skeptical Wombat is currently unavailable. Please try again later.";
     }
-}
+};
+
+export const getProblemSummary = async (problem) => {
+    try {
+        return await problemSummaryChain.invoke({
+            problem_statement: problem.problem_statement,
+            user1_private_version: problem.user1_private_version,
+            user2_private_version: problem.user2_private_version,
+            user1_steelman: problem.user1_steelman,
+            user2_steelman: problem.user2_steelman,
+            ai_analysis: problem.ai_analysis,
+            user1_proposed_solution: problem.user1_proposed_solution,
+            user2_proposed_solution: problem.user2_proposed_solution,
+            wombats_wager: problem.wombats_wager,
+            final_solution: problem.final_solution,
+        });
+    } catch (error) {
+        console.error("Error in getProblemSummary:", error);
+        return "The Skeptical Wombat is currently unavailable. Please try again later.";
+    }
+};
+
+export const getRelationshipAdvice = async (problem) => {
+    try {
+        return await relationshipAdviceChain.invoke({
+            problem_statement: problem.problem_statement,
+            user1_private_version: problem.user1_private_version,
+            user2_private_version: problem.user2_private_version,
+            user1_steelman: problem.user1_steelman,
+            user2_steelman: problem.user2_steelman,
+            ai_analysis: problem.ai_analysis,
+            user1_proposed_solution: problem.user1_proposed_solution,
+            user2_proposed_solution: problem.user2_proposed_solution,
+            wombats_wager: problem.wombats_wager,
+            final_solution: problem.final_solution,
+        });
+    } catch (error) {
+        console.error("Error in getRelationshipAdvice:", error);
+        return "The Skeptical Wombat is currently unavailable. Please try again later.";
+    }
+};

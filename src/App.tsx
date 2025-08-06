@@ -1,7 +1,9 @@
 import React from 'react';
 import { AppProvider } from './context/AppContext';
 import { useAppContext } from './hooks/useAppContext';
-import WombatAvatar from './components/ui/WombatAvatar';
+import { motion, AnimatePresence } from 'framer-motion';
+import Header from './components/layout/Header';
+import Sidebar from './components/layout/Sidebar';
 import ProgressBar from './components/ui/ProgressBar';
 import Notification from './components/ui/Notification';
 import PhaseAgreeStatement from './components/phases/PhaseAgreeStatement';
@@ -45,6 +47,8 @@ const MainApp = () => {
         handleProposeSolution,
         handleSolutionSteelmanSubmit,
         handleEmergencyWombat,
+        handleGetProblemSummary,
+        handleGetRelationshipAdvice,
     } = useAppContext();
 
     const [inviteLink, setInviteLink] = React.useState('');
@@ -99,7 +103,7 @@ const MainApp = () => {
                 phaseComponent = <PhaseSteelmanApproval problem={currentProblem} onApprove={handleSteelmanApproval} myRole={myRole} partnerName={partner?.name || 'Your Partner'} />;
                 break;
             case 'ai_review':
-                phaseComponent = <PhaseAIReview problem={currentProblem} onNext={() => handleUpdate(currentProblem.id, { status: 'propose_solutions' })} onEscalate={() => {}} isAiLoading={isAiLoading} />;
+                phaseComponent = <PhaseAIReview problem={currentProblem} onNext={() => handleUpdate(currentProblem.id, { status: 'propose_solutions' })} onEscalate={() => {}} isAiLoading={isAiLoading} handleGetRelationshipAdvice={handleGetRelationshipAdvice} />;
                 break;
             case 'propose_solutions':
                 phaseComponent = <PhaseProposeSolutions problem={currentProblem} onSave={handleUpdate} onSubmit={handleProposeSolution} myRole={myRole} />;
@@ -114,17 +118,26 @@ const MainApp = () => {
                 phaseComponent = <PhaseSolution problem={currentProblem} onUpdate={handleUpdate} onAgree={handleAgreement} onBrainstorm={() => {}} myRole={myRole} isAiLoading={isAiLoading} />;
                 break;
             case 'resolved':
-                phaseComponent = <PhaseResolved problem={currentProblem} onUpdate={handleUpdate} myRole={myRole} onGenerateImage={() => {}} isAiLoading={isAiLoading} mementoImage={null} onCritique={() => {}} />;
+                phaseComponent = <PhaseResolved problem={currentProblem} onUpdate={handleUpdate} myRole={myRole} onGenerateImage={() => {}} isAiLoading={isAiLoading} mementoImage={null} onCritique={() => {}} handleGetProblemSummary={handleGetProblemSummary} />;
                 break;
             default:
                 phaseComponent = <p>Unknown phase. The Wombat is confused.</p>;
         }
 
         return (
-            <div className="bg-gray-900 p-4 sm:p-6 rounded-xl shadow-2xl border border-gray-700">
-                <ProgressBar status={currentProblem.status} />
-                {phaseComponent}
-            </div>
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={currentProblem.status}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="bg-gray-900 p-4 sm:p-6 rounded-xl shadow-2xl border border-gray-700"
+                >
+                    <ProgressBar status={currentProblem.status} />
+                    {phaseComponent}
+                </motion.div>
+            </AnimatePresence>
         );
     }
 
@@ -150,25 +163,7 @@ const MainApp = () => {
                 </div>
             )}
 
-            <header className="bg-gray-900/50 backdrop-blur-sm shadow-lg sticky top-0 z-40 border-b border-white/10">
-                <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-                    <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center font-serif">
-                        <WombatAvatar className="w-10 h-10 mr-3" />
-                        Skeptical Wombat
-                    </h1>
-                    <div>
-                        {!user && isLoading && <div className="text-sm text-gray-400">Loading...</div>}
-                        {user && !partner && (
-                            <button onClick={generateInviteLink} className="bg-lime-500 hover:bg-lime-600 text-gray-900 font-bold py-2 px-4 rounded-lg transition">Invite Partner</button>
-                        )}
-                        {user && partner && (
-                             <button onClick={handleEmergencyWombat} disabled={!!isAiLoading} className="bg-red-500/80 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-red-800 disabled:animate-pulse">
-                                {isAiLoading === 'emergency' ? 'Thinking...' : 'Emergency Wombat'}
-                            </button>
-                        )}
-                    </div>
-                </div>
-            </header>
+            <Header />
 
             <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
                 {!partner ? (
@@ -182,40 +177,7 @@ const MainApp = () => {
                     </div>
                 ) : (
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div className="md:col-span-1">
-                        <div className="bg-gray-900 p-4 rounded-xl shadow-2xl border border-gray-700 space-y-4">
-                           <div>
-                                <h3 className="font-bold text-lg text-white">Your Names</h3>
-                                <div className="space-y-2 mt-2">
-                                    <input type="text" placeholder="Your Name" defaultValue={user?.name} onBlur={(e) => updateUserName(e.target.value)} className="w-full p-2 bg-gray-800 border border-gray-600 rounded-md text-white"/>
-                                    <input type="text" placeholder="Partner's Name" value={partner?.name || ''} disabled className="w-full p-2 bg-gray-800 border border-gray-600 rounded-md text-gray-400"/>
-                                </div>
-                           </div>
-                           <hr className="border-gray-700"/>
-                            <div>
-                                <div className="flex border-b border-gray-700 mb-4">
-                                    <button onClick={() => setActiveTab('active')} className={`py-2 px-4 font-bold ${activeTab === 'active' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'}`}>Active Dramas</button>
-                                    <button onClick={() => setActiveTab('trophy')} className={`py-2 px-4 font-bold ${activeTab === 'trophy' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'}`}>Trophy Room</button>
-                                </div>
-                                <button onClick={startNewProblem} className="w-full bg-lime-500 hover:bg-lime-600 text-gray-900 font-bold py-2 px-4 rounded-lg mb-4 transition">+ New Problem</button>
-                                <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-                                    {problems.filter(p => activeTab === 'active' ? p.status !== 'resolved' : p.status === 'resolved').map(p => (
-                                        <div key={p.id} onClick={() => setCurrentProblem(p)} className={`p-4 rounded-lg cursor-pointer transition ${currentProblem?.id === p.id ? 'bg-lime-900/50 ring-2 ring-lime-400' : 'bg-gray-800 hover:bg-gray-700'}`}>
-                                            <p className="font-semibold truncate text-white">{p.problem_statement || `Problem from ${new Date(p.createdAt.seconds * 1000).toLocaleDateString()}`}</p>
-                                            <span className={`text-xs font-medium px-2 py-1 rounded-full ${ p.status === 'resolved' ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'}`}>{p.status.replace(/_/g, ' ')}</span>
-                                        </div>
-                                    ))}
-                                    {activeTab === 'trophy' && problems.filter(p=>p.status === 'resolved').length === 0 &&
-                                        <div className="text-center p-8 text-gray-500">
-                                            <img src={WOMBAT_TROPHY_URL} className="w-32 h-32 mx-auto rounded-full opacity-30" />
-                                            <p className="mt-4 font-serif">The Trophy Room is depressingly empty.</p>
-                                            <p className="text-sm">Try solving a problem first.</p>
-                                        </div>
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <Sidebar />
                     <div className="md:col-span-2">
                        {renderPhase()}
                     </div>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { WOMBAT_TROPHY_URL } from '../../constants';
 
 /** Renders UI for the final, resolved state, with new features. */
-const PhaseResolved = ({ problem, onUpdate, myRole, onGenerateImage, isAiLoading, mementoImage, onCritique }) => {
+const PhaseResolved = ({ problem, onUpdate, myRole, onGenerateImage, isAiLoading, mementoImage, onCritique, handleGetProblemSummary }) => {
     const isPostMortemTime = problem.solution_check_date && new Date() > problem.solution_check_date.toDate();
     const myFeedback = problem[`${myRole}_post_mortem`];
     const [allowCritique, setAllowCritique] = useState(false);
@@ -27,9 +27,14 @@ const PhaseResolved = ({ problem, onUpdate, myRole, onGenerateImage, isAiLoading
             <div className="border-t-2 border-dashed border-purple-500 pt-6">
                 <h3 className="text-2xl font-serif text-purple-300 mb-2">Create a Memento</h3>
                 <p className="text-gray-400 mb-4">Generate a unique AI artwork that represents your journey through this disagreement.</p>
-                <button onClick={onGenerateImage} disabled={isAiLoading === 'image'} className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition">
-                    {isAiLoading === 'image' ? 'Generating...' : 'Generate a Memento'}
-                </button>
+                <div className="flex justify-center space-x-4">
+                    <button onClick={onGenerateImage} disabled={isAiLoading === 'image'} className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition">
+                        {isAiLoading === 'image' ? 'Generating...' : 'Generate a Memento'}
+                    </button>
+                    <button onClick={() => handleGetProblemSummary(problem)} disabled={isAiLoading === 'summary'} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition">
+                        {isAiLoading === 'summary' ? 'Summarizing...' : 'Get Summary'}
+                    </button>
+                </div>
                 {mementoImage && <img src={mementoImage} alt="AI-generated memento" className="mt-4 rounded-lg shadow-lg mx-auto" />}
             </div>
 

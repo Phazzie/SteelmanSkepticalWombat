@@ -3,7 +3,7 @@ import WombatAvatar from '../ui/WombatAvatar';
 import { WOMBAT_AVATAR_URL } from '../../constants';
 
 /** Renders UI for Phase 6: Displaying the Wombat's AI-generated verdict. */
-const PhaseAIReview = ({ problem, onNext, onEscalate, isAiLoading }) => (
+const PhaseAIReview = ({ problem, onNext, onEscalate, isAiLoading, handleGetRelationshipAdvice }) => (
     <div className="text-center">
         <h3 className="text-2xl font-serif text-white mb-4">Phase 6: The Wombat's Verdict</h3>
         <div className="flex justify-center mb-4">
@@ -25,6 +25,9 @@ const PhaseAIReview = ({ problem, onNext, onEscalate, isAiLoading }) => (
         <div className="mt-6 flex flex-col sm:flex-row gap-4">
             <button onClick={onNext} className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition">
                 Let's Propose Solutions
+            </button>
+            <button onClick={() => handleGetRelationshipAdvice(problem)} disabled={isAiLoading === 'advice'} className="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-gray-600 disabled:cursor-not-allowed">
+                {isAiLoading === 'advice' ? 'Thinking...' : 'Get Relationship Advice'}
             </button>
             <button onClick={onEscalate} disabled={problem.escalated_for_human_review} className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-gray-600 disabled:cursor-not-allowed">
                 {problem.escalated_for_human_review ? 'Awaiting Human Verdict' : 'Escalate to Human Wombat (Premium)'}
