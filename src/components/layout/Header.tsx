@@ -2,7 +2,7 @@ import React from 'react';
 import WombatAvatar from '../ui/WombatAvatar';
 import { useAppContext } from '../../hooks/useAppContext';
 
-const Header = () => {
+const Header = ({ startTour }) => {
     const {
         user,
         partner,
@@ -12,7 +12,7 @@ const Header = () => {
     } = useAppContext();
 
     return (
-        <header className="bg-gray-900/50 backdrop-blur-sm shadow-lg sticky top-0 z-40 border-b border-white/10">
+        <header className="app-header bg-gray-900/50 backdrop-blur-sm shadow-lg sticky top-0 z-40 border-b border-white/10">
             <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
                 <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center font-serif">
                     <WombatAvatar className="w-10 h-10 mr-3" />
@@ -22,6 +22,9 @@ const Header = () => {
                     {!user && <div className="text-sm text-gray-400">Loading...</div>}
                     {user && !partner && (
                         <button onClick={generateInviteLink} className="bg-lime-500 hover:bg-lime-600 text-gray-900 font-bold py-2 px-4 rounded-lg transition">Invite Partner</button>
+                    )}
+                    {user && (
+                        <button onClick={startTour} className="ml-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition">Start Tour</button>
                     )}
                     {user && partner && (
                          <button onClick={handleEmergencyWombat} disabled={!!isAiLoading} className="bg-red-500/80 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-red-800 disabled:animate-pulse">

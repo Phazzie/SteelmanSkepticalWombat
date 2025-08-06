@@ -4,6 +4,7 @@ import { useAppContext } from './hooks/useAppContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
+import Onboarding from './components/onboarding/Onboarding';
 import ProgressBar from './components/ui/ProgressBar';
 import Notification from './components/ui/Notification';
 import PhaseAgreeStatement from './components/phases/PhaseAgreeStatement';
@@ -54,6 +55,7 @@ const MainApp = () => {
     const [inviteLink, setInviteLink] = React.useState('');
     const [showInvite, setShowInvite] = React.useState(false);
     const [activeTab, setActiveTab] = React.useState('active');
+    const [runTour, setRunTour] = React.useState(false);
 
     const generateInviteLink = () => {
         if (!user) return;
@@ -163,9 +165,10 @@ const MainApp = () => {
                 </div>
             )}
 
-            <Header />
+            <Header startTour={() => setRunTour(true)} />
 
             <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+                <Onboarding run={runTour} setRun={setRunTour} />
                 {!partner ? (
                     <div className="text-center p-12 bg-gray-900 rounded-xl shadow-2xl relative overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent z-10"></div>
@@ -178,7 +181,7 @@ const MainApp = () => {
                 ) : (
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <Sidebar />
-                    <div className="md:col-span-2">
+                    <div className="md:col-span-2 phase-component">
                        {renderPhase()}
                     </div>
                 </div>

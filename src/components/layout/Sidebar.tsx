@@ -16,7 +16,7 @@ const Sidebar = () => {
     } = useAppContext();
 
     return (
-        <div className="md:col-span-1">
+        <div className="md:col-span-1 sidebar">
             <div className="bg-gray-900 p-4 rounded-xl shadow-2xl border border-gray-700 space-y-4">
                <div>
                     <h3 className="font-bold text-lg text-white">Your Names</h3>
