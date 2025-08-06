@@ -12,8 +12,10 @@ export const useCurrentProblemData = () => {
             partnerName: null,
             iHaveAgreed: false,
             partnerHasAgreed: false,
-            iHaveSubmitted: false,
-            partnerHasSubmitted: false,
+            iHaveSubmittedPrivate: false,
+            partnerHasSubmittedPrivate: false,
+            iHaveSubmittedSteelman: false,
+            partnerHasSubmittedSteelman: false,
             iHaveApproved: false,
             partnerHasApproved: false,
             iHaveProposed: false,
@@ -32,8 +34,12 @@ export const useCurrentProblemData = () => {
     const partnerHasAgreed = currentProblem[`${partnerRole}_agreed_problem`];
 
     // Private version submission
-    const iHaveSubmitted = currentProblem[`${myRole}_submitted_private`];
-    const partnerHasSubmitted = currentProblem[`${partnerRole}_submitted_private`];
+    const iHaveSubmittedPrivate = currentProblem[`${myRole}_submitted_private`];
+    const partnerHasSubmittedPrivate = currentProblem[`${partnerRole}_submitted_private`];
+
+    // Steelman submission
+    const iHaveSubmittedSteelman = !!currentProblem[`${myRole}_submitted_steelman`];
+    const partnerHasSubmittedSteelman = !!currentProblem[`${partnerRole}_submitted_steelman`];
 
     // Steelman approval
     const iHaveApproved = currentProblem[`${myRole}_approved_steelman`];
@@ -55,8 +61,10 @@ export const useCurrentProblemData = () => {
         partnerName,
         iHaveAgreed,
         partnerHasAgreed,
-        iHaveSubmitted,
-        partnerHasSubmitted,
+        iHaveSubmittedPrivate,
+        partnerHasSubmittedPrivate,
+        iHaveSubmittedSteelman,
+        partnerHasSubmittedSteelman,
         iHaveApproved,
         partnerHasApproved,
         iHaveProposed,

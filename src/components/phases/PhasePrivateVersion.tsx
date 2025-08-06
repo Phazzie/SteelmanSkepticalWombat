@@ -5,7 +5,7 @@ import { useAppContext } from '../../hooks/useAppContext';
 
 /** Renders UI for Phase 2: Stating private versions of the problem. */
 const PhasePrivateVersion = () => {
-    const { problem, myRole, iHaveSubmitted, partnerHasSubmitted } = useCurrentProblemData();
+    const { problem, myRole, iHaveSubmittedPrivate, partnerHasSubmittedPrivate } = useCurrentProblemData();
     const { handleUpdate, handlePrivateSubmit, isAiLoading } = useAppContext();
 
     if (!problem) return null;
@@ -19,13 +19,13 @@ const PhasePrivateVersion = () => {
                 onSave={(text) => handleUpdate(problem.id, { [`${myRole}_private_version`]: text })}
                 onSubmit={handlePrivateSubmit}
                 placeholder="From my point of view, the issue is..."
-                disabled={iHaveSubmitted || !!isAiLoading}
+                disabled={iHaveSubmittedPrivate || !!isAiLoading}
             />
             {isAiLoading === 'translation' && <p className="text-amber-400 text-sm mt-2 animate-pulse">Wombat is checking for subtext...</p>}
             <div className="text-sm text-gray-500 mt-4">
-                {iHaveSubmitted ? "✅ Your version is locked." : "Click 'Submit & Lock' to finalize."}
+                {iHaveSubmittedPrivate ? "✅ Your version is locked." : "Click 'Submit & Lock' to finalize."}
                 <br/>
-                {partnerHasSubmitted ? "✅ Partner has submitted." : "⏳ Waiting for partner..."}
+                {partnerHasSubmittedPrivate ? "✅ Partner has submitted." : "⏳ Waiting for partner..."}
             </div>
         </div>
     );

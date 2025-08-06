@@ -5,7 +5,7 @@ import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
 
 /** Renders UI for Phase 4: Writing the steelman of the partner's view. */
 const PhaseSteelman = () => {
-    const { problem, myRole, iHaveSubmitted, partnerHasSubmitted } = useCurrentProblemData();
+    const { problem, myRole, iHaveSubmittedSteelman, partnerHasSubmittedSteelman } = useCurrentProblemData();
     const { handleBSMeter, handleSteelmanSubmit, handleUpdate, isAiLoading } = useAppContext();
     const textareaRef = useRef(null);
 
@@ -22,7 +22,7 @@ const PhaseSteelman = () => {
                 onSave={(text) => handleUpdate(problem.id, { [`${myRole}_steelman`]: text })}
                 onSubmit={handleSteelmanSubmit}
                 placeholder="I imagine my partner feels that..."
-                disabled={iHaveSubmitted}
+                disabled={iHaveSubmittedSteelman}
             />
             <div className="flex justify-between items-center mt-4">
                 <button onClick={() => {
@@ -33,9 +33,9 @@ const PhaseSteelman = () => {
                     {isAiLoading === 'bs-meter' ? 'Analyzing...' : 'BS Meter'}
                 </button>
                 <div className="text-sm text-gray-500 text-right">
-                    {iHaveSubmitted ? "✅ Your steelman is locked." : "Click 'Submit & Lock' to finalize."}
+                    {iHaveSubmittedSteelman ? "✅ Your steelman is locked." : "Click 'Submit & Lock' to finalize."}
                     <br/>
-                    {partnerHasSubmitted ? "✅ Partner has submitted." : "⏳ Waiting for partner..."}
+                    {partnerHasSubmittedSteelman ? "✅ Partner has submitted." : "⏳ Waiting for partner..."}
                 </div>
             </div>
         </div>

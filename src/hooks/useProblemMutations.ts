@@ -1,16 +1,16 @@
-import { useContext } from 'react';
+import { useContext, useCallback } from 'react';
 import { AppContext } from '../context/AppContext';
 import { updateProblem } from '../services/firebase';
-import { getTranslation, getWager, getAIAnalysis as getWombatAnalysis } from '../services/ai';
+import { getTranslation, getWager, getAIAnalysis as getWombatAnalysis, callGemini } from '../services/ai';
 
 export const useProblemMutations = () => {
-    const { user, currentProblem, setIsAiLoading, isAiLoading } = useContext(AppContext);
+    const { user, currentProblem, setIsAiLoading, setNotification } = useContext(AppContext);
 
-    const handleUpdate = (problemId, data) => {
+    const handleUpdate = useCallback((problemId, data) => {
         updateProblem(problemId, data);
-    };
+    }, []);
 
-    const handleAgreement = (type) => {
+    const handleAgreement = useCallback((type) => {
         if (!currentProblem || !user) return;
         const myRole = currentProblem.roles[user.uid];
         const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
@@ -26,9 +26,9 @@ export const useProblemMutations = () => {
             }
             handleUpdate(currentProblem.id, updates);
         }
-    };
+    }, [currentProblem, user, handleUpdate]);
 
-    const handleSteelmanApproval = () => {
+    const handleSteelmanApproval = useCallback(() => {
         if (!currentProblem || !user) return;
         const myRole = currentProblem.roles[user.uid];
         const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
@@ -37,25 +37,28 @@ export const useProblemMutations = () => {
             updates.status = 'ai_review';
         }
         handleUpdate(currentProblem.id, updates);
-    };
+    }, [currentProblem, user, handleUpdate]);
 
-    const handlePrivateSubmit = async (text) => {
+    const handlePrivateSubmit = useCallback(async (text) => {
         if (!currentProblem || !user) return;
         setIsAiLoading('translation');
-        const myRole = currentProblem.roles[user.uid];
-        const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
-        const translationResult = await getTranslation(text);
-        const updates = {
-            [`${myRole}_private_version`]: text,
-            [`${myRole}_submitted_private`]: true,
-            [`${myRole}_translation`]: translationResult || "Translation failed.",
-        };
-        if (currentProblem[`${partnerRole}_submitted_private`]) updates.status = 'translation';
-        handleUpdate(currentProblem.id, updates);
-        setIsAiLoading(null);
-    };
+        try {
+            const myRole = currentProblem.roles[user.uid];
+            const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
+            const translationResult = await getTranslation(text);
+            const updates = {
+                [`${myRole}_private_version`]: text,
+                [`${myRole}_submitted_private`]: true,
+                [`${myRole}_translation`]: translationResult || "Translation failed.",
+            };
+            if (currentProblem[`${partnerRole}_submitted_private`]) updates.status = 'translation';
+            handleUpdate(currentProblem.id, updates);
+        } finally {
+            setIsAiLoading(null);
+        }
+    }, [currentProblem, user, handleUpdate, setIsAiLoading]);
 
-    const handleSteelmanSubmit = (text) => {
+    const handleSteelmanSubmit = useCallback((text) => {
         if (!currentProblem || !user) return;
         const myRole = currentProblem.roles[user.uid];
         const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
@@ -64,18 +67,21 @@ export const useProblemMutations = () => {
             updates.status = 'steelman_approval';
         }
         handleUpdate(currentProblem.id, updates);
-    };
+    }, [currentProblem, user, handleUpdate]);
 
-    const getAIAnalysis = async (problem) => {
+    const getAIAnalysis = useCallback(async (problem) => {
         setIsAiLoading('verdict');
-        const analysisText = await getWombatAnalysis(problem);
-        if (analysisText) {
-            await handleUpdate(problem.id, { ai_analysis: analysisText, status: 'propose_solutions' });
+        try {
+            const analysisText = await getWombatAnalysis(problem);
+            if (analysisText) {
+                await handleUpdate(problem.id, { ai_analysis: analysisText, status: 'propose_solutions' });
+            }
+        } finally {
+            setIsAiLoading(null);
         }
-        setIsAiLoading(null);
-    };
+    }, [handleUpdate, setIsAiLoading]);
 
-    const handleProposeSolution = (text) => {
+    const handleProposeSolution = useCallback((text) => {
         if (!currentProblem || !user) return;
         const myRole = currentProblem.roles[user.uid];
         const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
@@ -84,9 +90,9 @@ export const useProblemMutations = () => {
             updates.status = 'solution_steelman';
         }
         handleUpdate(currentProblem.id, updates);
-    };
+    }, [currentProblem, user, handleUpdate]);
 
-    const handleSolutionSteelmanSubmit = async (text) => {
+    const handleSolutionSteelmanSubmit = useCallback(async (text) => {
         if (!currentProblem || !user) return;
         const myRole = currentProblem.roles[user.uid];
         const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
@@ -94,17 +100,75 @@ export const useProblemMutations = () => {
 
         if (currentProblem[`${partnerRole}_solution_steelman`]) {
             setIsAiLoading('wager');
-            const wagerResult = await getWager(currentProblem, text);
-            if(wagerResult) {
-                updates.wombats_wager = wagerResult;
-                updates.status = 'wager';
-                await handleUpdate(currentProblem.id, updates);
+            try {
+                const wagerResult = await getWager(currentProblem, text);
+                if (wagerResult) {
+                    updates.wombats_wager = wagerResult;
+                    updates.status = 'wager';
+                    await handleUpdate(currentProblem.id, updates);
+                }
+            } finally {
+                setIsAiLoading(null);
             }
-            setIsAiLoading(null);
         } else {
             await handleUpdate(currentProblem.id, updates);
         }
-    };
+    }, [currentProblem, user, handleUpdate, setIsAiLoading]);
+
+    const handleGenerateImage = useCallback(async () => {
+        if (!currentProblem) return;
+        setIsAiLoading('image');
+        try {
+            const prompt = `
+            **Persona:** You are a poetic and slightly surreal art director.
+            **Task:** Generate a concise, evocative, and visually rich prompt for an AI image generator (like Midjourney or DALL-E). The prompt should be a single, flowing sentence that artistically captures the emotional journey from the problem to the solution. Do not use any line breaks.
+            **Problem Statement:** "${currentProblem.problem_statement}"
+            **Solution Statement:** "${currentProblem.solution_statement}"
+            **Image Prompt:**`;
+
+            const imagePrompt = await callGemini(prompt);
+            if (imagePrompt) {
+                setNotification({ show: true, message: `Image Prompt: "${imagePrompt}"`, duration: 8000 });
+            } else {
+                setNotification({ show: true, message: "The Wombat is feeling uninspired. Try again later.", type: 'warning' });
+            }
+        } finally {
+            setIsAiLoading(null);
+        }
+    }, [currentProblem, setIsAiLoading, setNotification]);
+
+    const handleCritique = useCallback(async () => {
+        if (!currentProblem) return;
+        setIsAiLoading('critique');
+        try {
+            setNotification({ show: true, message: "The Wombat is thinking about how to improve itself." });
+        } finally {
+            setIsAiLoading(null);
+        }
+    }, [currentProblem, setIsAiLoading, setNotification]);
+
+    const handleBrainstorm = useCallback(async () => {
+        if (!currentProblem) return;
+        setIsAiLoading('brainstorm');
+        try {
+            const prompt = `
+            **Persona:** You are The Skeptical Wombat. You've been asked to brainstorm solutions.
+            **Task:** Based on the problem and the failed final solution attempt, provide three distinct, concrete, and slightly unconventional brainstorming ideas. Frame them as if you're slightly annoyed you have to do this.
+            - **Problem:** "${currentProblem.problem_statement}"
+            - **Failed Solution Attempt:** "${currentProblem.solution_statement}"
+            **Brainstorming Ideas:**`;
+            const brainstormed = await callGemini(prompt);
+            if (brainstormed) {
+                await handleUpdate(currentProblem.id, { brainstormed_solutions: brainstormed });
+            }
+        } finally {
+            setIsAiLoading(null);
+        }
+    }, [currentProblem, setIsAiLoading, handleUpdate]);
+
+    const handleEscalate = useCallback(async () => {
+        setNotification({ show: true, message: "This feature is for premium users only." });
+    }, [setNotification]);
 
     return {
         handleUpdate,
@@ -115,5 +179,9 @@ export const useProblemMutations = () => {
         getAIAnalysis,
         handleProposeSolution,
         handleSolutionSteelmanSubmit,
+        handleGenerateImage,
+        handleCritique,
+        handleBrainstorm,
+        handleEscalate,
     };
 };

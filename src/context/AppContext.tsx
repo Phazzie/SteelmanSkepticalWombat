@@ -82,6 +82,10 @@ export const AppProvider = ({ children }) => {
         getAIAnalysis,
         handleProposeSolution,
         handleSolutionSteelmanSubmit,
+        handleGenerateImage,
+        handleCritique,
+        handleBrainstorm,
+        handleEscalate,
     } = useProblemMutations();
 
     useEffect(() => {
@@ -89,7 +93,7 @@ export const AppProvider = ({ children }) => {
         const unsubscribe = onProblemsSnapshot(user.uid, (querySnapshot) => {
             const fetchedProblems = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
             setProblems(fetchedProblems);
-            if (currentProblem) {
+            if (currentProblem?.id) {
                 const updatedCurrent = fetchedProblems.find(p => p.id === currentProblem.id);
                 if (updatedCurrent) {
                     setCurrentProblem(updatedCurrent);
@@ -100,7 +104,7 @@ export const AppProvider = ({ children }) => {
             }
         });
         return () => unsubscribe();
-    }, [user?.uid, currentProblem, isAiLoading, getAIAnalysis]);
+    }, [user?.uid, currentProblem?.id, isAiLoading, getAIAnalysis]);
 
     const value = {
         user,
@@ -126,6 +130,10 @@ export const AppProvider = ({ children }) => {
         handleSteelmanSubmit,
         handleProposeSolution,
         handleSolutionSteelmanSubmit,
+        handleGenerateImage,
+        handleCritique,
+        handleBrainstorm,
+        handleEscalate,
         handleBSMeter: async (text) => {
             setIsAiLoading('bs-meter');
             const result = await getBSAnalysis(text);

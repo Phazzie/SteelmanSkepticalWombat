@@ -7,7 +7,7 @@ import { useAppContext } from '../../hooks/useAppContext';
 /** Renders UI for Phase 6: Displaying the Wombat's AI-generated verdict. */
 const PhaseAIReview = () => {
     const { problem } = useCurrentProblemData();
-    const { handleUpdate, isAiLoading } = useAppContext();
+    const { handleUpdate, isAiLoading, handleEscalate } = useAppContext();
 
     if (!problem) return null;
 
@@ -34,7 +34,7 @@ const PhaseAIReview = () => {
                 <button onClick={() => handleUpdate(problem.id, { status: 'propose_solutions' })} className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition">
                     Let's Propose Solutions
                 </button>
-                <button disabled={problem.escalated_for_human_review} className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-gray-600 disabled:cursor-not-allowed">
+                <button onClick={handleEscalate} disabled={problem.escalated_for_human_review} className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-gray-600 disabled:cursor-not-allowed">
                     {problem.escalated_for_human_review ? 'Awaiting Human Verdict' : 'Escalate to Human Wombat (Premium)'}
                 </button>
             </div>
