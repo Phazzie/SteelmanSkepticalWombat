@@ -14,7 +14,7 @@ const callGemini = async (prompt: string): Promise<string | null> => {
     // Halt execution if the API key is missing to prevent failed API calls.
     if (!apiKey) {
         console.error("Gemini API key is missing. Please set VITE_GEMINI_API_KEY in your .env file.");
-        throw new Error("Missing Gemini API key.");
+        return null;
     }
 
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
