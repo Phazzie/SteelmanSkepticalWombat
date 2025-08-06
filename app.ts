@@ -607,25 +607,28 @@ export default function App() {
     const startNewProblem = async () => {
         if (!user?.uid || !partner?.uid) return;
         setIsCreatingProblem(true);
-        const newProblem = {
-            participants: [user.uid, partner.uid], roles: { [user.uid]: 'user1', [partner.uid]: 'user2' }, createdAt: new Date(),
-            status: 'agree_statement', problem_statement: '', user1_agreed_problem: false, user2_agreed_problem: false,
-            user1_private_version: '', user2_private_version: '', user1_submitted_private: false, user2_submitted_private: false,
-            user1_translation: '', user2_translation: '',
-            user1_manipulation_analysis: '', user2_manipulation_analysis: '',
-            user1_steelman: '', user2_steelman: '', user1_submitted_steelman: false, user2_submitted_steelman: false,
-            user1_approved_steelman: false, user2_approved_steelman: false,
-            ai_analysis: '', 
-            user1_proposed_solution: '', user2_proposed_solution: '', 
-            user1_solution_steelman: '', user2_solution_steelman: '',
-            wombats_wager: '',
-            solution_statement: '', user1_agreed_solution: false, user2_agreed_solution: false,
-            solution_check_date: null, user1_post_mortem: '', user2_post_mortem: '',
-        };
-        const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/problems`), newProblem);
-        setCurrentProblem({ id: docRef.id, ...newProblem });
-        setActiveTab('active');
-        setIsCreatingProblem(false);
+        try {
+            const newProblem = {
+                participants: [user.uid, partner.uid], roles: { [user.uid]: 'user1', [partner.uid]: 'user2' }, createdAt: new Date(),
+                status: 'agree_statement', problem_statement: '', user1_agreed_problem: false, user2_agreed_problem: false,
+                user1_private_version: '', user2_private_version: '', user1_submitted_private: false, user2_submitted_private: false,
+                user1_translation: '', user2_translation: '',
+                user1_manipulation_analysis: '', user2_manipulation_analysis: '',
+                user1_steelman: '', user2_steelman: '', user1_submitted_steelman: false, user2_submitted_steelman: false,
+                user1_approved_steelman: false, user2_approved_steelman: false,
+                ai_analysis: '',
+                user1_proposed_solution: '', user2_proposed_solution: '',
+                user1_solution_steelman: '', user2_solution_steelman: '',
+                wombats_wager: '',
+                solution_statement: '', user1_agreed_solution: false, user2_agreed_solution: false,
+                solution_check_date: null, user1_post_mortem: '', user2_post_mortem: '',
+            };
+            const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/problems`), newProblem);
+            setCurrentProblem({ id: docRef.id, ...newProblem });
+            setActiveTab('active');
+        } finally {
+            setIsCreatingProblem(false);
+        }
     };
 
     const handleUpdate = async (problemId, data) => {
@@ -663,7 +666,7 @@ export default function App() {
     };
     
     const handlePrivateSubmit = async (text) => {
-        if (!currentProblem || !user) return;
+        if (!currentProblem || !user || isAiLoading) return;
         setIsAiLoading('translation');
         const myRole = currentProblem.roles[user.uid];
         const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
@@ -694,6 +697,7 @@ export default function App() {
     };
     
     const getAIAnalysis = async (problem) => {
+        if (isAiLoading) return;
         setIsAiLoading('verdict');
         const beefedUpPrompt = `
         **Persona Lock-in:** You are The Skeptical Wombat. Your voice is essential. You are NOT a therapist.
@@ -729,7 +733,7 @@ export default function App() {
     };
 
     const handleSolutionSteelmanSubmit = async (text) => {
-        if (!currentProblem || !user) return;
+        if (!currentProblem || !user || isAiLoading) return;
         const myRole = currentProblem.roles[user.uid];
         const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
         const updates = { [`${myRole}_solution_steelman`]: text };
@@ -757,22 +761,25 @@ export default function App() {
     };
 
     const handleGenerateImage = async () => {
-        if (!currentProblem) return;
+        if (!currentProblem || isAiLoading) return;
         setIsAiLoading('image');
-        const prompt = `
-        **Persona:** You are a poetic and slightly surreal art director.
-        **Task:** Generate a concise, evocative, and visually rich prompt for an AI image generator (like Midjourney or DALL-E). The prompt should be a single, flowing sentence that artistically captures the emotional journey from the problem to the solution. Do not use any line breaks.
-        **Problem Statement:** "${currentProblem.problem_statement}"
-        **Solution Statement:** "${currentProblem.solution_statement}"
-        **Image Prompt:**`;
+        try {
+            const prompt = `
+            **Persona:** You are a poetic and slightly surreal art director.
+            **Task:** Generate a concise, evocative, and visually rich prompt for an AI image generator (like Midjourney or DALL-E). The prompt should be a single, flowing sentence that artistically captures the emotional journey from the problem to the solution. Do not use any line breaks.
+            **Problem Statement:** "${currentProblem.problem_statement}"
+            **Solution Statement:** "${currentProblem.solution_statement}"
+            **Image Prompt:**`;
 
-        const imagePrompt = await callGemini(prompt);
-        if (imagePrompt) {
-            setNotification({ show: true, message: `Image Prompt: "${imagePrompt}"`, duration: 8000 });
-        } else {
-            setNotification({ show: true, message: "The Wombat is feeling uninspired. Try again later.", type: 'warning' });
+            const imagePrompt = await callGemini(prompt);
+            if (imagePrompt) {
+                setNotification({ show: true, message: `Image Prompt: "${imagePrompt}"`, duration: 8000 });
+            } else {
+                setNotification({ show: true, message: "The Wombat is feeling uninspired. Try again later.", type: 'warning' });
+            }
+        } finally {
+            setIsAiLoading(null);
         }
-        setIsAiLoading(null);
     };
 
     const handleWombatCritique = async () => {
@@ -785,19 +792,22 @@ export default function App() {
     };
 
     const handleBrainstorm = async () => {
-        if (!currentProblem) return;
+        if (!currentProblem || isAiLoading) return;
         setIsAiLoading('brainstorm');
-        const prompt = `
-        **Persona:** You are The Skeptical Wombat. You've been asked to brainstorm solutions.
-        **Task:** Based on the problem and the failed final solution attempt, provide three distinct, concrete, and slightly unconventional brainstorming ideas. Frame them as if you're slightly annoyed you have to do this.
-        - **Problem:** "${currentProblem.problem_statement}"
-        - **Failed Solution Attempt:** "${currentProblem.solution_statement}"
-        **Brainstorming Ideas:**`;
-        const brainstormed = await callGemini(prompt);
-        if (brainstormed) {
-            await handleUpdate(currentProblem.id, { brainstormed_solutions: brainstormed });
+        try {
+            const prompt = `
+            **Persona:** You are The Skeptical Wombat. You've been asked to brainstorm solutions.
+            **Task:** Based on the problem and the failed final solution attempt, provide three distinct, concrete, and slightly unconventional brainstorming ideas. Frame them as if you're slightly annoyed you have to do this.
+            - **Problem:** "${currentProblem.problem_statement}"
+            - **Failed Solution Attempt:** "${currentProblem.solution_statement}"
+            **Brainstorming Ideas:**`;
+            const brainstormed = await callGemini(prompt);
+            if (brainstormed) {
+                await handleUpdate(currentProblem.id, { brainstormed_solutions: brainstormed });
+            }
+        } finally {
+            setIsAiLoading(null);
         }
-        setIsAiLoading(null);
     };
     
     const checkBS = async () => {
