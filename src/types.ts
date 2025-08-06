@@ -1,0 +1,31 @@
+export interface IProblem {
+    id: string;
+    createdAt: { seconds: number; nanoseconds: number };
+    status: string;
+    problem_statement?: string;
+    roles: { [key: string]: 'user1' | 'user2' };
+    user1_agreed_problem?: boolean;
+    user2_agreed_problem?: boolean;
+    user1_private_version?: string;
+    user2_private_version?: string;
+    user1_submitted_private?: boolean;
+    user2_submitted_private?: boolean;
+    user1_translation?: string;
+    user2_translation?: string;
+    user1_steelman?: string;
+    user2_steelman?: string;
+    user1_submitted_steelman?: boolean;
+    user2_submitted_steelman?: boolean;
+    user1_approved_steelman?: boolean;
+    user2_approved_steelman?: boolean;
+    ai_analysis?: string;
+    user1_proposed_solution?: string;
+    user2_proposed_solution?: string;
+    user1_solution_steelman?: string;
+    user2_solution_steelman?: string;
+    wombats_wager?: string;
+    user1_agreed_solution?: boolean;
+    user2_agreed_solution?: boolean;
+    solution_check_date?: Date;
+    final_solution?: string;
+}

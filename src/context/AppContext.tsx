@@ -14,14 +14,15 @@ import {
 } from '../services/firebase';
 import { getBSAnalysis, getEmergencyWombat, getAIAnalysis as getWombatAnalysis } from '../services/ai';
 import { useProblemMutations } from '../hooks/useProblemMutations';
+import { IProblem } from '../types';
 
 export const AppContext = createContext(null);
 
 export const AppProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [partner, setPartner] = useState(null);
-    const [problems, setProblems] = useState([]);
-    const [currentProblem, setCurrentProblem] = useState(null);
+    const [problems, setProblems] = useState<IProblem[]>([]);
+    const [currentProblem, setCurrentProblem] = useState<IProblem | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isAiLoading, setIsAiLoading] = useState(null);
     const [notification, setNotification] = useState({ show: false, message: '', type: 'info', duration: 4000 });
