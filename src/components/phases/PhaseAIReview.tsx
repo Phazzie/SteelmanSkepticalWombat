@@ -1,21 +1,23 @@
 import React from 'react';
 import WombatAvatar from '../ui/WombatAvatar';
 import { WOMBAT_AVATAR_URL } from '../../constants';
+import { Problem } from '../../types';
+
+/**
+ * Props for the PhaseAIReview component.
+ */
+interface PhaseAIReviewProps {
+    problem: Problem;
+    onNext: () => void;
+    onEscalate: () => void;
+    isAiLoading: boolean | string;
+}
 
 /**
  * Renders the UI for Phase 6, where the Skeptical Wombat's AI-generated verdict is displayed.
  * This component shows the analysis from either the AI or a human reviewer.
- *
- * @param {object} props - The component's props.
- * @param {object} props.problem - The main problem object containing all data.
- * @param {string} props.problem.human_verdict - The verdict from a human reviewer, if available.
- * @param {string} props.problem.ai_analysis - The AI-generated analysis.
- * @param {boolean} props.problem.escalated_for_human_review - Flag indicating if the problem was escalated.
- * @param {function} props.onNext - Callback function to proceed to the next phase.
- * @param {function} props.onEscalate - Callback function to escalate the problem for human review.
- * @param {boolean|string} props.isAiLoading - Flag to indicate if the AI is currently generating a response.
  */
-const PhaseAIReview = ({ problem, onNext, onEscalate, isAiLoading }) => (
+const PhaseAIReview: React.FC<PhaseAIReviewProps> = ({ problem, onNext, onEscalate, isAiLoading }) => (
     <div className="text-center">
         <h3 className="text-2xl font-serif text-white mb-4">Phase 6: The Wombat's Verdict</h3>
         <div className="flex justify-center mb-4">

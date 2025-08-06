@@ -8,7 +8,7 @@ To get the project running locally, follow these steps:
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-repo/skeptical-wombat.git
+    git clone https://github.com/Phazzie/skeptical-wombat.git
     cd skeptical-wombat
     ```
 

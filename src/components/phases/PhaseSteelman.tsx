@@ -1,28 +1,39 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import DraftTextarea from '../ui/DraftTextarea';
 import { useAppContext } from '../../hooks/useAppContext';
+import { Problem } from '../../types';
+
+/**
+ * Props for the PhaseSteelman component.
+ */
+interface PhaseSteelmanProps {
+    problem: Problem;
+    onSave: (problemId: string, data: { [key: string]: any }) => void;
+    onSubmit: () => void;
+    myRole: 'user1' | 'user2';
+    isAiLoading: boolean | string;
+}
 
 /**
  * Renders the UI for Phase 4, where a user writes a "steelman" argument
  * for their partner's perspective.
- *
- * @param {object} props - The component's props.
- * @param {object} props.problem - The main problem object.
- * @param {function} props.onSave - Callback to save the draft of the steelman text.
- * @param {function} props.onSubmit - Callback to submit and lock the final steelman.
- * @param {string} props.myRole - The current user's role ('user1' or 'user2').
- * @param {boolean|string} props.isAiLoading - Flag indicating if an AI process is running.
  */
-const PhaseSteelman = ({ problem, onSave, onSubmit, myRole, isAiLoading }) => {
+const PhaseSteelman: React.FC<PhaseSteelmanProps> = ({ problem, onSave, onSubmit, myRole, isAiLoading }) => {
     // Access the BS Meter function from the global context.
     const { handleBSMeter } = useAppContext();
-    const textareaRef = useRef(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const [isBSTextEmpty, setIsBSTextEmpty] = useState(true);
 
     // Determine the submission status for both the current user and their partner.
-    // This uses dynamic property access based on the user's role.
     const iHaveSubmitted = problem[`${myRole}_submitted_steelman`];
     const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
     const partnerHasSubmitted = problem[`${partnerRole}_submitted_steelman`];
+    const steelmanText = problem[`${myRole}_steelman`] || '';
+
+    // Effect to check if the textarea is empty to control the BS Meter button state.
+    useEffect(() => {
+        setIsBSTextEmpty(!steelmanText.trim());
+    }, [steelmanText]);
 
     return (
         <div>
@@ -32,7 +43,7 @@ const PhaseSteelman = ({ problem, onSave, onSubmit, myRole, isAiLoading }) => {
 
             <DraftTextarea
                 ref={textareaRef}
-                value={problem[`${myRole}_steelman`]}
+                value={steelmanText}
                 onSave={(text) => onSave(problem.id, { [`${myRole}_steelman`]: text })}
                 onSubmit={onSubmit}
                 placeholder="I imagine my partner feels that..."
@@ -47,8 +58,8 @@ const PhaseSteelman = ({ problem, onSave, onSubmit, myRole, isAiLoading }) => {
                             handleBSMeter(textareaRef.current.value);
                         }
                     }}
-                    disabled={isAiLoading === 'bs-meter'}
-                    className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg transition"
+                    disabled={isAiLoading === 'bs-meter' || isBSTextEmpty}
+                    className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-gray-600 disabled:cursor-not-allowed"
                 >
                     {isAiLoading === 'bs-meter' ? 'Analyzing...' : 'BS Meter'}
                 </button>
