@@ -740,13 +740,16 @@ export default function App() {
 
         if (currentProblem[`${partnerRole}_solution_steelman`]) {
             setIsAiLoading('wager');
+            const user1Steelman = myRole === 'user1' ? text : currentProblem[`${partnerRole}_solution_steelman`];
+            const user2Steelman = myRole === 'user2' ? text : currentProblem[`${partnerRole}_solution_steelman`];
+
             const wagerPrompt = `
             **Persona:** You are the Skeptical Wombat. You are blunt, realistic, and highly skeptical of starry-eyed, vague solutions. You've seen this all before.
             **Task:** You are given two proposed solutions AND each partner's attempt to explain the other's solution. Your job is to make a "wager" on which proposal is more likely to actually work, based on its realism and whether the partners seem to actually understand each other. Be blunt and explain your reasoning with dry, jaded wit.
             - **Solution A (from Partner 1):** "${currentProblem.user1_proposed_solution}"
-            - **Partner 2's understanding of Solution A:** "${currentProblem.user2_solution_steelman}"
+            - **Partner 2's understanding of Solution A:** "${user2Steelman}"
             - **Solution B (from Partner 2):** "${currentProblem.user2_proposed_solution}"
-            - **Partner 1's understanding of Solution B:** "${text}" 
+            - **Partner 1's understanding of Solution B:** "${user1Steelman}"
             **Wager:**`;
             const wagerResult = await callGemini(wagerPrompt);
             if(wagerResult) {
