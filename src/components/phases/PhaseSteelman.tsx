@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import DraftTextarea from '../ui/DraftTextarea';
 import { useAppContext } from '../../hooks/useAppContext';
 import { Problem } from '../../types';
@@ -24,6 +24,10 @@ const PhaseSteelman: React.FC<PhaseSteelmanProps> = ({ problem, onSave, onSubmit
 
     // This state now holds the real-time value of the textarea.
     const [draftText, setDraftText] = useState(problem[`${myRole}_steelman`] || '');
+
+    useEffect(() => {
+        setDraftText(problem[`${myRole}_steelman`] || '');
+    }, [problem, myRole]);
 
     // Determine the submission status for both the current user and their partner.
     const iHaveSubmitted = problem[`${myRole}_submitted_steelman`];
