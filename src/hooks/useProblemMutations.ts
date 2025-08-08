@@ -1,12 +1,10 @@
 import { useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useProblems } from '../context/ProblemsContext';
 import { updateProblem } from '../services/firebase';
 import { getTranslation, getWager, getAIAnalysis as getWombatAnalysis, callGemini } from '../services/ai';
 
-export const useProblemMutations = () => {
+export const useProblemMutations = (currentProblem, setIsAiLoading, setNotification) => {
     const { user } = useAuth();
-    const { currentProblem, setIsAiLoading, setNotification } = useProblems();
 
     const handleUpdate = useCallback((problemId, data) => {
         updateProblem(problemId, data);

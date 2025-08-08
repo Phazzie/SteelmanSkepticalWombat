@@ -1,7 +1,7 @@
 import React from 'react';
 import DraftTextarea from '../ui/DraftTextarea';
 import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
-import { useProblems } from '../../hooks/useProblems';
+import { useProblems } from '../../context/ProblemsContext';
 
 /** Renders UI for the new Phase 8: Steelmanning the partner's proposed solution. */
 const PhaseSolutionSteelman = () => {

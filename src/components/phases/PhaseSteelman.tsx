@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import DraftTextarea from '../ui/DraftTextarea';
-import { useProblems } from '../../hooks/useProblems';
+import { useProblems } from '../../context/ProblemsContext';
 import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
 
 /** Renders UI for Phase 4: Writing the steelman of the partner's view. */

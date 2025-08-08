@@ -1,7 +1,7 @@
 import React from 'react';
 import DraftTextarea from '../ui/DraftTextarea';
 import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
-import { useProblems } from '../../hooks/useProblems';
+import { useProblems } from '../../context/ProblemsContext';
 
 /** Renders UI for Phase 7: Proposing individual solutions. */
 const PhaseProposeSolutions = () => {

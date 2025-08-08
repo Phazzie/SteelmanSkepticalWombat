@@ -1,23 +1,31 @@
 import React, { useState } from 'react';
 import { WOMBAT_TROPHY_URL } from '../../constants';
 import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
-import { useProblems } from '../../hooks/useProblems';
+import { useProblems } from '../../context/ProblemsContext';
+
+const isPostMortemTime = (problem) => {
+    if (!problem?.solution_check_date?.toDate) {
+        return false;
+    }
+    return new Date() > problem.solution_check_date.toDate();
+};
 
 /** Renders UI for the final, resolved state, with new features. */
 const PhaseResolved = () => {
-    const { problem } = useCurrentProblemData();
+    const { problem, myRole } = useCurrentProblemData();
     const { isAiLoading, handleGenerateImage, handleCritique, handlePostMortemSubmit } = useProblems();
     const [allowCritique, setAllowCritique] = useState(false);
     const [feedback, setFeedback] = useState('');
 
     if (!problem) return null;
 
-    const isPostMortemTime = problem.solution_check_date && typeof problem.solution_check_date.toDate === 'function' && new Date() > problem.solution_check_date.toDate();
+    const postMortemActive = isPostMortemTime(problem);
+    const hasSubmittedFeedback = !!problem[`${myRole}_post_mortem`];
 
     return (
         <div className="text-center p-10 space-y-8">
             <div>
-                <img src={WOMBAT_TROPHY_URL} alt="Trophy Wombat" className="w-48 h-48 mx-auto rounded-full border-4 border-amber-400" />
+                <img src={WOMBAT_TROPHY_URL} alt="Trophy Womb.at" className="w-48 h-48 mx-auto rounded-full border-4 border-amber-400" />
                 <h2 className="text-3xl font-bold font-serif text-amber-300 mt-4">Problem Resolved (For Now)</h2>
                 <div className="mt-6 text-left space-y-4 max-w-lg mx-auto">
                     <div>
@@ -39,19 +47,24 @@ const PhaseResolved = () => {
                 </button>
             </div>
 
-            {isPostMortemTime && (
+            {postMortemActive && (
                  <div className="mt-6 border-t-2 border-dashed border-sky-500 pt-6">
                     <h3 className="text-2xl font-serif text-sky-300 mb-2">Post-Mortem Review</h3>
                     <p className="text-gray-400 mb-4">It's been over a week. Is the solution actually working, or are you just pretending? Be honest.</p>
                     <textarea
-                        className="w-full p-3 border-2 border-gray-700 rounded-lg bg-gray-800 text-gray-200 focus:ring-2 focus:ring-lime-400 focus:border-lime-400 transition"
+                        className="w-full p-3 border-2 border-gray-700 rounded-lg bg-gray-800 text-gray-200 focus:ring-2 focus:ring-lime-400 focus:border-lime-400 transition disabled:bg-gray-700/50"
                         rows="4"
-                        placeholder="My honest feedback is..."
-                        value={feedback}
+                        placeholder={hasSubmittedFeedback ? "You've already submitted your feedback." : "My honest feedback is..."}
+                        value={hasSubmittedFeedback ? problem[`${myRole}_post_mortem`] : feedback}
                         onChange={(e) => setFeedback(e.target.value)}
+                        disabled={hasSubmittedFeedback}
                     />
-                    <button onClick={() => handlePostMortemSubmit(feedback)} className="mt-4 bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg transition">
-                        Submit Feedback
+                    <button
+                        onClick={() => handlePostMortemSubmit(feedback)}
+                        disabled={hasSubmittedFeedback || !feedback}
+                        className="mt-4 bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-gray-600 disabled:cursor-not-allowed"
+                    >
+                        {hasSubmittedFeedback ? 'Feedback Submitted' : 'Submit Feedback'}
                     </button>
                 </div>
             )}

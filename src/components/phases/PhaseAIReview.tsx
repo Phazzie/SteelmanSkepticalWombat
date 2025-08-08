@@ -2,7 +2,7 @@ import React from 'react';
 import WombatAvatar from '../ui/WombatAvatar';
 import { WOMBAT_AVATAR_URL } from '../../constants';
 import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
-import { useProblems } from '../../hooks/useProblems';
+import { useProblems } from '../../context/ProblemsContext';
 
 /** Renders UI for Phase 6: Displaying the Wombat's AI-generated verdict. */
 const PhaseAIReview = () => {

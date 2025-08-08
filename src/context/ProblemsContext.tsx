@@ -16,7 +16,7 @@ export const ProblemsProvider = ({ children }) => {
     const [currentProblem, setCurrentProblem] = useState(null);
     const [isAiLoading, setIsAiLoading] = useState(null);
     const [notification, setNotification] = useState({ show: false, message: '', type: 'info', duration: 4000 });
-
+    const [analysisRequestedFor, setAnalysisRequestedFor] = useState(null);
 
     const {
         handleUpdate,
@@ -32,7 +32,7 @@ export const ProblemsProvider = ({ children }) => {
         handleBrainstorm,
         handleEscalate,
         handlePostMortemSubmit,
-    } = useProblemMutations();
+    } = useProblemMutations(currentProblem, setIsAiLoading, setNotification);
 
     useEffect(() => {
         if (!user?.uid) return;
@@ -43,14 +43,15 @@ export const ProblemsProvider = ({ children }) => {
                 const updatedCurrent = fetchedProblems.find(p => p.id === currentProblem.id);
                 if (updatedCurrent) {
                     setCurrentProblem(updatedCurrent);
-                    if (updatedCurrent.status === 'ai_review' && !updatedCurrent.ai_analysis && !isAiLoading) {
+                    if (updatedCurrent.status === 'ai_review' && !updatedCurrent.ai_analysis && !isAiLoading && analysisRequestedFor !== updatedCurrent.id) {
+                        setAnalysisRequestedFor(updatedCurrent.id);
                         getAIAnalysis(updatedCurrent);
                     }
                 }
             }
         });
         return () => unsubscribe();
-    }, [user?.uid, currentProblem?.id, isAiLoading, getAIAnalysis]);
+    }, [user?.uid, currentProblem?.id, isAiLoading, getAIAnalysis, analysisRequestedFor]);
 
     const value = {
         problems,
@@ -62,7 +63,7 @@ export const ProblemsProvider = ({ children }) => {
         startNewProblem: async () => {
             const docRef = await createNewProblem(user, partner);
             const newProblem = { id: docRef.id, ...(await getDoc(docRef)).data() };
-            setCurrentProblem(newProblem)
+            setCurrentProblem(newProblem);
         },
         setCurrentProblem,
         handleUpdate,
