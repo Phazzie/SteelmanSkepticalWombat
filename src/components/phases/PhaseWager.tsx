@@ -1,6 +1,6 @@
 import React from 'react';
 import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
-import { useProblems } from '../../hooks/useProblems';
+import { useProblems } from '../../context/ProblemsContext';
 
 /** Renders UI for Phase 9: The Wombat's Wager */
 const PhaseWager = () => {

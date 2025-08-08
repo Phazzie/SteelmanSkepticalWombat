@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
 import { useProblems } from '../../context/ProblemsContext';
 
@@ -6,6 +6,13 @@ import { useProblems } from '../../context/ProblemsContext';
 const PhaseAgreeStatement = () => {
     const { problem, iHaveAgreed, partnerHasAgreed } = useCurrentProblemData();
     const { handleUpdate, handleAgreement } = useProblems();
+    const [statement, setStatement] = useState(problem?.problem_statement || '');
+
+    useEffect(() => {
+        if (problem?.problem_statement) {
+            setStatement(problem.problem_statement);
+        }
+    }, [problem?.problem_statement]);
 
     if (!problem) return null;
 
@@ -16,8 +23,9 @@ const PhaseAgreeStatement = () => {
             <textarea
                 className="w-full p-3 border-2 border-gray-700 rounded-lg bg-gray-800 text-gray-200 focus:ring-2 focus:ring-lime-400 focus:border-lime-400 transition"
                 rows="4"
-                defaultValue={problem.problem_statement}
-                onBlur={(e) => handleUpdate(problem.id, { problem_statement: e.target.value })}
+                value={statement}
+                onChange={(e) => setStatement(e.target.value)}
+                onBlur={() => handleUpdate(problem.id, { problem_statement: statement })}
                 disabled={iHaveAgreed}
             />
             <div className="flex justify-between items-center mt-4">

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { WOMBAT_TROPHY_URL } from '../../constants';
 import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
-import { useProblems } from '../../hooks/useProblems';
+import { useProblems } from '../../context/ProblemsContext';
 
 /** Renders UI for the final, resolved state, with new features. */
 const PhaseResolved = () => {
@@ -13,6 +13,15 @@ const PhaseResolved = () => {
     if (!problem) return null;
 
     const isPostMortemTime = problem.solution_check_date && typeof problem.solution_check_date.toDate === 'function' && new Date() > problem.solution_check_date.toDate();
+
+    // Wrap the post-mortem submit handler to reset feedback after successful submission
+    const handlePostMortemSubmitWithReset = async (text) => {
+        const result = await handlePostMortemSubmit(text);
+        if (result && !result.error) {
+            setFeedback('');
+        }
+        return result;
+    };
 
     return (
         <div className="text-center p-10 space-y-8">
@@ -50,7 +59,7 @@ const PhaseResolved = () => {
                         value={feedback}
                         onChange={(e) => setFeedback(e.target.value)}
                     />
-                    <button onClick={() => handlePostMortemSubmit(feedback)} className="mt-4 bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg transition">
+                    <button onClick={() => handlePostMortemSubmitWithReset(feedback)} className="mt-4 bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg transition">
                         Submit Feedback
                     </button>
                 </div>

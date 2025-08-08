@@ -1,11 +1,18 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
-import { useProblems } from '../../hooks/useProblems';
+import { useProblems } from '../../context/ProblemsContext';
 
 /** Renders UI for Phase 10: Collaborating on a final solution. */
 const PhaseSolution = () => {
     const { problem, iHaveAgreed } = useCurrentProblemData();
     const { handleUpdate, handleAgreement, isAiLoading, handleBrainstorm } = useProblems();
+    const [solution, setSolution] = useState(problem?.solution_statement || '');
+
+    useEffect(() => {
+        if (problem?.solution_statement) {
+            setSolution(problem.solution_statement);
+        }
+    }, [problem?.solution_statement]);
 
     if (!problem) return null;
 
@@ -24,8 +31,9 @@ const PhaseSolution = () => {
             <textarea
                 className="w-full p-3 border-2 border-gray-700 rounded-lg bg-gray-800 text-gray-200 focus:ring-2 focus:ring-lime-400 focus:border-lime-400 transition"
                 rows="4"
-                defaultValue={problem.solution_statement}
-                onBlur={(e) => handleUpdate(problem.id, { solution_statement: e.target.value })}
+                value={solution}
+                onChange={(e) => setSolution(e.target.value)}
+                onBlur={() => handleUpdate(problem.id, { solution_statement: solution })}
                 disabled={iHaveAgreed}
             />
             <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-4">

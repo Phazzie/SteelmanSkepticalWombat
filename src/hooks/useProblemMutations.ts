@@ -1,12 +1,8 @@
 import { useCallback } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useProblems } from '../context/ProblemsContext';
 import { updateProblem } from '../services/firebase';
 import { getTranslation, getWager, getAIAnalysis as getWombatAnalysis, callGemini } from '../services/ai';
 
-export const useProblemMutations = () => {
-    const { user } = useAuth();
-    const { currentProblem, setIsAiLoading, setNotification } = useProblems();
+export const useProblemMutations = (user, currentProblem, setIsAiLoading, setNotification) => {
 
     const handleUpdate = useCallback((problemId, data) => {
         updateProblem(problemId, data);
@@ -177,6 +173,7 @@ export const useProblemMutations = () => {
         const myRole = currentProblem.roles[user.uid];
         const updates = { [`${myRole}_post_mortem`]: text };
         handleUpdate(currentProblem.id, updates);
+        return { error: null }; // Added return value
     }, [currentProblem, user, handleUpdate]);
 
     return {
