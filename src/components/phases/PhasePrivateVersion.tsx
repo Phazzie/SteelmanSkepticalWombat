@@ -1,12 +1,12 @@
 import React from 'react';
 import DraftTextarea from '../ui/DraftTextarea';
 import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
-import { useAppContext } from '../../hooks/useAppContext';
+import { useProblems } from '../../hooks/useProblems';
 
 /** Renders UI for Phase 2: Stating private versions of the problem. */
 const PhasePrivateVersion = () => {
     const { problem, myRole, iHaveSubmittedPrivate, partnerHasSubmittedPrivate } = useCurrentProblemData();
-    const { handleUpdate, handlePrivateSubmit, isAiLoading } = useAppContext();
+    const { handleUpdate, handlePrivateSubmit, isAiLoading } = useProblems();
 
     if (!problem) return null;
 

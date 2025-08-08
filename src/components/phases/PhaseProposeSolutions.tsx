@@ -1,12 +1,12 @@
 import React from 'react';
 import DraftTextarea from '../ui/DraftTextarea';
 import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
-import { useAppContext } from '../../hooks/useAppContext';
+import { useProblems } from '../../hooks/useProblems';
 
 /** Renders UI for Phase 7: Proposing individual solutions. */
 const PhaseProposeSolutions = () => {
     const { problem, myRole, iHaveProposed, partnerHasProposed } = useCurrentProblemData();
-    const { handleUpdate, handleProposeSolution } = useAppContext();
+    const { handleUpdate, handleProposeSolution } = useProblems();
 
     if (!problem) return null;
 

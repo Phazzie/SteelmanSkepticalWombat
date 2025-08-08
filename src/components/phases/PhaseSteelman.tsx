@@ -1,12 +1,12 @@
 import React, { useRef } from 'react';
 import DraftTextarea from '../ui/DraftTextarea';
-import { useAppContext } from '../../hooks/useAppContext';
+import { useProblems } from '../../hooks/useProblems';
 import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
 
 /** Renders UI for Phase 4: Writing the steelman of the partner's view. */
 const PhaseSteelman = () => {
     const { problem, myRole, iHaveSubmittedSteelman, partnerHasSubmittedSteelman } = useCurrentProblemData();
-    const { handleBSMeter, handleSteelmanSubmit, handleUpdate, isAiLoading } = useAppContext();
+    const { handleBSMeter, handleSteelmanSubmit, handleUpdate, isAiLoading } = useProblems();
     const textareaRef = useRef(null);
 
     if (!problem) return null;

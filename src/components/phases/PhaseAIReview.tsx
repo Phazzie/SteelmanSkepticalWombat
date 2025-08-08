@@ -2,12 +2,12 @@ import React from 'react';
 import WombatAvatar from '../ui/WombatAvatar';
 import { WOMBAT_AVATAR_URL } from '../../constants';
 import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
-import { useAppContext } from '../../hooks/useAppContext';
+import { useProblems } from '../../hooks/useProblems';
 
 /** Renders UI for Phase 6: Displaying the Wombat's AI-generated verdict. */
 const PhaseAIReview = () => {
     const { problem } = useCurrentProblemData();
-    const { handleUpdate, isAiLoading, handleEscalate } = useAppContext();
+    const { handleUpdate, isAiLoading, handleEscalate } = useProblems();
 
     if (!problem) return null;
 

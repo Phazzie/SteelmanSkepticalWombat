@@ -1,8 +1,9 @@
-import { useContext } from 'react';
-import { AppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import { useProblems } from '../context/ProblemsContext';
 
 export const useCurrentProblemData = () => {
-    const { user, partner, currentProblem } = useContext(AppContext);
+    const { user, partner } = useAuth();
+    const { currentProblem } = useProblems();
 
     if (!currentProblem || !user) {
         return {

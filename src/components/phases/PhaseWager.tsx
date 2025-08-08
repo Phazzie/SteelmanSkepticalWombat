@@ -1,11 +1,11 @@
 import React from 'react';
 import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
-import { useAppContext } from '../../hooks/useAppContext';
+import { useProblems } from '../../hooks/useProblems';
 
 /** Renders UI for Phase 9: The Wombat's Wager */
 const PhaseWager = () => {
     const { problem } = useCurrentProblemData();
-    const { handleUpdate, isAiLoading } = useAppContext();
+    const { handleUpdate, isAiLoading } = useProblems();
 
     if (!problem) return null;
 

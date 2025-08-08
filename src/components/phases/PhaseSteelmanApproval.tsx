@@ -1,11 +1,11 @@
 import React from 'react';
 import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
-import { useAppContext } from '../../hooks/useAppContext';
+import { useProblems } from '../../hooks/useProblems';
 
 /** Renders UI for Phase 5: Approving the partner's steelman. */
 const PhaseSteelmanApproval = () => {
     const { problem, partnerRole, partnerName, iHaveApproved, partnerHasApproved } = useCurrentProblemData();
-    const { handleSteelmanApproval } = useAppContext();
+    const { handleSteelmanApproval } = useProblems();
 
     if (!problem) return null;
 

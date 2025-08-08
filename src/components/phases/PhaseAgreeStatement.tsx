@@ -1,11 +1,11 @@
 import React from 'react';
 import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
-import { useAppContext } from '../../hooks/useAppContext';
+import { useProblems } from '../../context/ProblemsContext';
 
 /** Renders UI for Phase 1: Agreeing on a problem statement. */
 const PhaseAgreeStatement = () => {
     const { problem, iHaveAgreed, partnerHasAgreed } = useCurrentProblemData();
-    const { handleUpdate, handleAgreement } = useAppContext();
+    const { handleUpdate, handleAgreement } = useProblems();
 
     if (!problem) return null;
 

@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { WOMBAT_TROPHY_URL } from '../../constants';
 import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
-import { useAppContext } from '../../hooks/useAppContext';
+import { useProblems } from '../../hooks/useProblems';
 
 /** Renders UI for the final, resolved state, with new features. */
 const PhaseResolved = () => {
     const { problem } = useCurrentProblemData();
-    const { isAiLoading, handleGenerateImage, handleCritique } = useAppContext();
+    const { isAiLoading, handleGenerateImage, handleCritique, handlePostMortemSubmit } = useProblems();
     const [allowCritique, setAllowCritique] = useState(false);
+    const [feedback, setFeedback] = useState('');
 
     if (!problem) return null;
 
@@ -42,7 +43,16 @@ const PhaseResolved = () => {
                  <div className="mt-6 border-t-2 border-dashed border-sky-500 pt-6">
                     <h3 className="text-2xl font-serif text-sky-300 mb-2">Post-Mortem Review</h3>
                     <p className="text-gray-400 mb-4">It's been over a week. Is the solution actually working, or are you just pretending? Be honest.</p>
-                    {/* ... Post-mortem buttons ... */}
+                    <textarea
+                        className="w-full p-3 border-2 border-gray-700 rounded-lg bg-gray-800 text-gray-200 focus:ring-2 focus:ring-lime-400 focus:border-lime-400 transition"
+                        rows="4"
+                        placeholder="My honest feedback is..."
+                        value={feedback}
+                        onChange={(e) => setFeedback(e.target.value)}
+                    />
+                    <button onClick={() => handlePostMortemSubmit(feedback)} className="mt-4 bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg transition">
+                        Submit Feedback
+                    </button>
                 </div>
             )}
 

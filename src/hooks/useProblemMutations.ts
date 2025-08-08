@@ -1,10 +1,12 @@
-import { useContext, useCallback } from 'react';
-import { AppContext } from '../context/AppContext';
+import { useCallback } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useProblems } from '../context/ProblemsContext';
 import { updateProblem } from '../services/firebase';
 import { getTranslation, getWager, getAIAnalysis as getWombatAnalysis, callGemini } from '../services/ai';
 
 export const useProblemMutations = () => {
-    const { user, currentProblem, setIsAiLoading, setNotification } = useContext(AppContext);
+    const { user } = useAuth();
+    const { currentProblem, setIsAiLoading, setNotification } = useProblems();
 
     const handleUpdate = useCallback((problemId, data) => {
         updateProblem(problemId, data);
@@ -170,6 +172,13 @@ export const useProblemMutations = () => {
         setNotification({ show: true, message: "This feature is for premium users only." });
     }, [setNotification]);
 
+    const handlePostMortemSubmit = useCallback(async (text) => {
+        if (!currentProblem || !user) return;
+        const myRole = currentProblem.roles[user.uid];
+        const updates = { [`${myRole}_post_mortem`]: text };
+        handleUpdate(currentProblem.id, updates);
+    }, [currentProblem, user, handleUpdate]);
+
     return {
         handleUpdate,
         handleAgreement,
@@ -183,5 +192,6 @@ export const useProblemMutations = () => {
         handleCritique,
         handleBrainstorm,
         handleEscalate,
+        handlePostMortemSubmit,
     };
 };

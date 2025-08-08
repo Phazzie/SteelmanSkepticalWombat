@@ -1,11 +1,11 @@
 import React from 'react';
 import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
-import { useAppContext } from '../../hooks/useAppContext';
+import { useProblems } from '../../hooks/useProblems';
 
 /** Renders UI for Phase 3: The Wombat's Translation */
 const PhaseTranslation = () => {
     const { problem, myRole, partnerRole, partnerName } = useCurrentProblemData();
-    const { handleUpdate } = useAppContext();
+    const { handleUpdate } = useProblems();
 
     if (!problem) return null;
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import DraftTextarea from '../ui/DraftTextarea';
 import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
-import { useAppContext } from '../../hooks/useAppContext';
+import { useProblems } from '../../hooks/useProblems';
 
 /** Renders UI for the new Phase 8: Steelmanning the partner's proposed solution. */
 const PhaseSolutionSteelman = () => {
@@ -13,7 +13,7 @@ const PhaseSolutionSteelman = () => {
         iHaveSubmittedSolutionSteelman,
         partnerHasSubmittedSolutionSteelman,
     } = useCurrentProblemData();
-    const { handleUpdate, handleSolutionSteelmanSubmit } = useAppContext();
+    const { handleUpdate, handleSolutionSteelmanSubmit } = useProblems();
 
     if (!problem) return null;
 

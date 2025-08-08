@@ -1,11 +1,11 @@
 import React from 'react';
 import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
-import { useAppContext } from '../../hooks/useAppContext';
+import { useProblems } from '../../hooks/useProblems';
 
 /** Renders UI for Phase 10: Collaborating on a final solution. */
 const PhaseSolution = () => {
     const { problem, iHaveAgreed } = useCurrentProblemData();
-    const { handleUpdate, handleAgreement, isAiLoading, handleBrainstorm } = useAppContext();
+    const { handleUpdate, handleAgreement, isAiLoading, handleBrainstorm } = useProblems();
 
     if (!problem) return null;
 
