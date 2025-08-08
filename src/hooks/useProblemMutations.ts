@@ -76,7 +76,7 @@ export const useProblemMutations = () => {
         try {
             const analysisText = await getWombatAnalysis(problem);
             if (analysisText) {
-                await handleUpdate(problem.id, { ai_analysis: analysisText, status: 'propose_solutions' });
+                await handleUpdate(problem.id, { ai_analysis: analysisText });
             }
         } finally {
             setIsAiLoading(null);

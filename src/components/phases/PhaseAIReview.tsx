@@ -31,7 +31,11 @@ const PhaseAIReview = () => {
             )}
 
             <div className="mt-6 flex flex-col sm:flex-row gap-4">
-                <button onClick={() => handleUpdate(problem.id, { status: 'propose_solutions' })} className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition">
+                <button
+                    onClick={() => handleUpdate(problem.id, { status: 'propose_solutions' })}
+                    disabled={!problem.ai_analysis || isAiLoading === 'verdict'}
+                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-gray-600 disabled:cursor-not-allowed"
+                >
                     Let's Propose Solutions
                 </button>
                 <button onClick={handleEscalate} disabled={problem.escalated_for_human_review} className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-gray-600 disabled:cursor-not-allowed">
