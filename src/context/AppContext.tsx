@@ -27,6 +27,8 @@ export const AppProvider = ({ children }) => {
     const [isAiLoading, setIsAiLoading] = useState(null);
     const [notification, setNotification] = useState({ show: false, message: '', type: 'info', duration: 4000 });
     const [emergencyWombatMemory, setEmergencyWombatMemory] = useState(new ConversationBufferMemory());
+    const [inviteLink, setInviteLink] = useState('');
+    const [showInvite, setShowInvite] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onAuthChange(async (currentUser) => {
@@ -91,7 +93,7 @@ export const AppProvider = ({ children }) => {
             }
         });
         return () => unsubscribe();
-    }, [user?.uid, currentProblem?.id, isAiLoading]);
+    }, [user?.uid, currentProblem?.id]);
 
     const handleUpdate = (problemId, data) => {
         updateProblem(problemId, data);
@@ -210,6 +212,17 @@ export const AppProvider = ({ children }) => {
         isAiLoading,
         notification,
         setNotification,
+        activeTab,
+        setActiveTab,
+        inviteLink,
+        showInvite,
+        generateInviteLink: () => {
+            if (!user) return;
+            const link = `${window.location.origin}${window.location.pathname}?invite=${user.uid}`;
+            setInviteLink(link);
+            setShowInvite(true);
+        },
+        closeInviteModal: () => setShowInvite(false),
         startNewProblem: async () => {
             const docRef = await createNewProblem(user, partner);
             const newProblem = { id: docRef.id, ...(await getDoc(docRef)).data() };

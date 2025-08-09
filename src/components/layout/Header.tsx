@@ -8,7 +8,6 @@ const Header = ({ startTour }) => {
         partner,
         isAiLoading,
         handleEmergencyWombat,
-        generateInviteLink,
     } = useAppContext();
 
     return (

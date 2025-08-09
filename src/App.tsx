@@ -32,37 +32,23 @@ const MainApp = () => {
     const {
         user,
         partner,
-        problems,
         currentProblem,
-        isLoading,
-        isAiLoading,
         notification,
         setNotification,
-        startNewProblem,
-        setCurrentProblem,
-        updateUserName,
         handleUpdate,
         handleAgreement,
         handleSteelmanApproval,
         handlePrivateSubmit,
         handleProposeSolution,
         handleSolutionSteelmanSubmit,
-        handleEmergencyWombat,
         handleGetProblemSummary,
         handleGetRelationshipAdvice,
+        inviteLink,
+        showInvite,
+        closeInviteModal,
     } = useAppContext();
 
-    const [inviteLink, setInviteLink] = React.useState('');
-    const [showInvite, setShowInvite] = React.useState(false);
-    const [activeTab, setActiveTab] = React.useState('active');
     const [runTour, setRunTour] = React.useState(false);
-
-    const generateInviteLink = () => {
-        if (!user) return;
-        const link = `${window.location.origin}${window.location.pathname}?invite=${user.uid}`;
-        setInviteLink(link);
-        setShowInvite(true);
-    };
 
     const renderPhase = () => {
         if (!currentProblem) return (
@@ -160,7 +146,7 @@ const MainApp = () => {
                         <h2 className="text-2xl font-serif text-white mb-4">Invite Your Partner</h2>
                         <p className="text-gray-400 mb-4">Send this link to your partner to connect.</p>
                         <input type="text" readOnly value={inviteLink} className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white"/>
-                        <button onClick={() => setShowInvite(false)} className="mt-4 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg">Close</button>
+                        <button onClick={closeInviteModal} className="mt-4 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg">Close</button>
                     </div>
                 </div>
             )}
