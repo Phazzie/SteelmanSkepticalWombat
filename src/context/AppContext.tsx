@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext, useMemo, useCallback } from 'react';
 import {
     onAuthChange,
     anonymousSignIn,
@@ -12,11 +12,12 @@ import {
     createNewProblem,
     getDoc,
 } from '../services/firebase';
-import { getBSAnalysis, getEmergencyWombat, getAIAnalysis as getWombatAnalysis } from '../services/ai';
-import { useProblemMutations } from '../hooks/useProblemMutations';
+import { getBSAnalysis, getEmergencyWombat } from '../services/ai';
+import { createProblemMutations } from '../hooks/useProblemMutations';
 import { IProblem } from '../types';
 
 export const AppContext = createContext(null);
+export const useAppContext = () => useContext(AppContext);
 
 export const AppProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -74,36 +75,68 @@ export const AppProvider = ({ children }) => {
         return () => unsubscribe();
     }, []);
 
-    const {
-        handleUpdate,
-        handleAgreement,
-        handleSteelmanApproval,
-        handlePrivateSubmit,
-        handleSteelmanSubmit,
-        getAIAnalysis,
-        handleProposeSolution,
-        handleSolutionSteelmanSubmit,
-    } = useProblemMutations();
+    const problemMutations = useMemo(
+        () => user ? createProblemMutations(user, currentProblem, setIsAiLoading) : null,
+        [user, currentProblem]
+    );
 
     useEffect(() => {
-        if (!user?.uid) return;
+        if (!user?.uid || !problemMutations) return;
+
         const unsubscribe = onProblemsSnapshot(user.uid, (querySnapshot) => {
-            const fetchedProblems = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+            const fetchedProblems = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as IProblem).sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
             setProblems(fetchedProblems);
-            if (currentProblem) {
-                const updatedCurrent = fetchedProblems.find(p => p.id === currentProblem.id);
-                if (updatedCurrent) {
-                    setCurrentProblem(updatedCurrent);
-                    if (updatedCurrent.status === 'ai_review' && !updatedCurrent.ai_analysis && !isAiLoading) {
-                        getAIAnalysis(updatedCurrent);
-                    }
-                }
+
+            const updatedCurrent = currentProblem ? fetchedProblems.find(p => p.id === currentProblem.id) : null;
+            if (updatedCurrent) {
+                setCurrentProblem(updatedCurrent);
             }
         });
-        return () => unsubscribe();
-    }, [user?.uid, currentProblem, isAiLoading, getAIAnalysis]);
 
-    const value = {
+        return () => unsubscribe();
+    }, [user?.uid, currentProblem, problemMutations]);
+
+    // Effect for triggering AI analysis
+    useEffect(() => {
+        if (currentProblem?.status === 'ai_review' && !currentProblem.ai_analysis && !isAiLoading && problemMutations) {
+            problemMutations.getAIAnalysis(currentProblem);
+        }
+    }, [currentProblem, isAiLoading, problemMutations]);
+
+    // Effect for triggering Wager analysis
+    useEffect(() => {
+        if (currentProblem?.status === 'wager' && !currentProblem.wombats_wager && !isAiLoading && problemMutations) {
+            problemMutations.getWagerAnalysis(currentProblem);
+        }
+    }, [currentProblem, isAiLoading, problemMutations]);
+
+    const startNewProblem = useCallback(async () => {
+        if (!user || !partner) return;
+        const docRef = await createNewProblem(user, partner);
+        const newProblem = { id: docRef.id, ...(await getDoc(docRef)).data() } as IProblem;
+        setCurrentProblem(newProblem);
+    }, [user, partner]);
+
+    const updateUserName = useCallback((newName: string) => {
+        if (!user) return;
+        updateUserNameInDb(user.uid, newName);
+    }, [user]);
+
+    const handleBSMeter = useCallback(async (text: string) => {
+        setIsAiLoading('bs-meter');
+        const result = await getBSAnalysis(text);
+        setNotification({ show: true, message: result || "The Wombat is speechless.", type: 'info' });
+        setIsAiLoading(null);
+    }, []);
+
+    const handleEmergencyWombat = useCallback(async () => {
+        setIsAiLoading('emergency');
+        const result = await getEmergencyWombat();
+        setNotification({ show: true, message: result || "The Wombat is on a coffee break.", type: 'info' });
+        setIsAiLoading(null);
+    }, []);
+
+    const value = useMemo(() => ({
         user,
         partner,
         problems,
@@ -113,33 +146,13 @@ export const AppProvider = ({ children }) => {
         setIsAiLoading,
         notification,
         setNotification,
-        startNewProblem: async () => {
-            const docRef = await createNewProblem(user, partner);
-            const newProblem = { id: docRef.id, ...(await getDoc(docRef)).data() };
-            setCurrentProblem(newProblem)
-        },
+        startNewProblem,
         setCurrentProblem,
-        updateUserName: (newName) => updateUserNameInDb(user.uid, newName),
-        handleUpdate,
-        handleAgreement,
-        handleSteelmanApproval,
-        handlePrivateSubmit,
-        handleSteelmanSubmit,
-        handleProposeSolution,
-        handleSolutionSteelmanSubmit,
-        handleBSMeter: async (text) => {
-            setIsAiLoading('bs-meter');
-            const result = await getBSAnalysis(text);
-            setNotification({ show: true, message: result || "The Wombat is speechless.", type: 'info' });
-            setIsAiLoading(null);
-        },
-        handleEmergencyWombat: async () => {
-            setIsAiLoading('emergency');
-            const result = await getEmergencyWombat();
-            setNotification({ show: true, message: result || "The Wombat is on a coffee break.", type: 'info' });
-            setIsAiLoading(null);
-        },
-    };
+        updateUserName,
+        ...problemMutations,
+        handleBSMeter,
+        handleEmergencyWombat,
+    }), [user, partner, problems, currentProblem, isLoading, isAiLoading, notification, startNewProblem, updateUserName, problemMutations, handleBSMeter, handleEmergencyWombat]);
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

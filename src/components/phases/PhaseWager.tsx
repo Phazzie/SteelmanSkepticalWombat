@@ -1,11 +1,11 @@
 import React from 'react';
 import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
-import { useAppContext } from '../../hooks/useAppContext';
+import { useAppContext } from '../../context/AppContext';
 
 /** Renders UI for Phase 9: The Wombat's Wager */
 const PhaseWager = () => {
     const { problem } = useCurrentProblemData();
-    const { handleUpdate, isAiLoading } = useAppContext();
+    const { handleAdvanceToSolution, isAiLoading } = useAppContext();
 
     if (!problem) return null;
 
@@ -20,7 +20,7 @@ const PhaseWager = () => {
                     <p className="text-amber-200 whitespace-pre-wrap">{problem.wombats_wager}</p>
                 </div>
             )}
-             <button onClick={() => handleUpdate(problem.id, { status: 'solution' })} className="mt-6 w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition">
+             <button onClick={handleAdvanceToSolution} className="mt-6 w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition">
                 Proceed to Final Solution
             </button>
         </div>

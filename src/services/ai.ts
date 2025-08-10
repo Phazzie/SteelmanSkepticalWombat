@@ -64,3 +64,13 @@ export const getEmergencyWombat = () => {
     const prompt = `You are the Emergency Wombat. A user has clicked the emergency button. Provide a piece of generic, witty, and slightly unhelpful advice. Keep it to one or two sentences.`;
     return callGemini(prompt);
 }
+
+export const getEscalation = (problem) => {
+    const prompt = `A user wants to escalate a problem to a human. Here is the problem data: ${JSON.stringify(problem)}. Provide a human-like response.`;
+    return callGemini(prompt);
+};
+
+export const getBrainstorm = (problem) => {
+    const prompt = `The users are stuck on finding a final solution. Here is the problem data: ${JSON.stringify(problem)}. Brainstorm some creative, concrete, and actionable solutions.`;
+    return callGemini(prompt);
+};

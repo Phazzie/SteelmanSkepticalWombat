@@ -35,7 +35,15 @@ const DraftTextarea = React.forwardRef<HTMLTextAreaElement, DraftTextareaProps>(
                     disabled={disabled}
                 />
                 {!disabled && (
-                    <button onClick={() => onSubmit(text)} className="mt-4 bg-lime-500 hover:bg-lime-600 text-gray-900 font-bold py-2 px-4 rounded-lg transition">
+                    <button
+                        onClick={() => {
+                            if (text.trim().length > 0) {
+                                onSubmit(text);
+                            }
+                        }}
+                        className="mt-4 bg-lime-500 hover:bg-lime-600 text-gray-900 font-bold py-2 px-4 rounded-lg transition"
+                        disabled={text.trim().length === 0}
+                    >
                         {submitText}
                     </button>
                 )}

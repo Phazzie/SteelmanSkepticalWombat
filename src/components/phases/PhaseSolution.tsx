@@ -5,7 +5,7 @@ import { useAppContext } from '../../hooks/useAppContext';
 /** Renders UI for Phase 10: Collaborating on a final solution. */
 const PhaseSolution = () => {
     const { problem, iHaveAgreed } = useCurrentProblemData();
-    const { handleUpdate, handleAgreement, isAiLoading } = useAppContext();
+    const { handleUpdate, handleAgreement, handleBrainstorm, isAiLoading } = useAppContext();
 
     if (!problem) return null;
 
@@ -29,7 +29,7 @@ const PhaseSolution = () => {
                 disabled={iHaveAgreed}
             />
             <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-4">
-                <button disabled={isAiLoading === 'brainstorm'} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg transition w-full sm:w-auto">
+                <button onClick={handleBrainstorm} disabled={isAiLoading === 'brainstorm'} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg transition w-full sm:w-auto">
                     {isAiLoading === 'brainstorm' ? 'Brainstorming...' : 'Wombat, Brainstorm for Us'}
                 </button>
                 <button onClick={() => handleAgreement('solution')} disabled={iHaveAgreed} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg disabled:bg-gray-600 transition w-full sm:w-auto">

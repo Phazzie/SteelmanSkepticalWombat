@@ -2,12 +2,12 @@ import React from 'react';
 import WombatAvatar from '../ui/WombatAvatar';
 import { WOMBAT_AVATAR_URL } from '../../constants';
 import { useCurrentProblemData } from '../../hooks/useCurrentProblemData';
-import { useAppContext } from '../../hooks/useAppContext';
+import { useAppContext } from '../../context/AppContext';
 
 /** Renders UI for Phase 6: Displaying the Wombat's AI-generated verdict. */
 const PhaseAIReview = () => {
     const { problem } = useCurrentProblemData();
-    const { handleUpdate, isAiLoading } = useAppContext();
+    const { handleAdvanceToProposeSolutions, handleEscalate, isAiLoading } = useAppContext();
 
     if (!problem) return null;
 
@@ -31,11 +31,11 @@ const PhaseAIReview = () => {
             )}
 
             <div className="mt-6 flex flex-col sm:flex-row gap-4">
-                <button onClick={() => handleUpdate(problem.id, { status: 'propose_solutions' })} className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition">
+                <button onClick={handleAdvanceToProposeSolutions} className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition">
                     Let's Propose Solutions
                 </button>
-                <button disabled={problem.escalated_for_human_review} className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-gray-600 disabled:cursor-not-allowed">
-                    {problem.escalated_for_human_review ? 'Awaiting Human Verdict' : 'Escalate to Human Wombat (Premium)'}
+                <button onClick={handleEscalate} disabled={problem.escalated_for_human_review || isAiLoading === 'escalate'} className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-gray-600 disabled:cursor-not-allowed">
+                    {isAiLoading === 'escalate' ? 'Escalating...' : problem.escalated_for_human_review ? 'Awaiting Human Verdict' : 'Escalate to Human Wombat (Premium)'}
                 </button>
             </div>
         </div>

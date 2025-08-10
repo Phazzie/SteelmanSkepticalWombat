@@ -57,7 +57,6 @@ export const problemStateReducer = (problem: IProblem, action: Action, userId: s
 
         case 'SET_AI_ANALYSIS':
             updates.ai_analysis = action.payload.analysis;
-            updates.status = 'propose_solutions';
             return updates;
 
         case 'ADVANCE_TO_PROPOSE_SOLUTIONS':
