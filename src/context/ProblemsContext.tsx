@@ -15,12 +15,14 @@ export const ProblemsProvider = ({ children }) => {
     const [problems, setProblems] = useState([]);
     const [currentProblem, setCurrentProblem] = useState(null);
     const [notification, setNotification] = useState({ show: false, message: '', type: 'info', duration: 4000 });
+    const [analysisRequestedId, setAnalysisRequestedId] = useState(null);
+    const [generatedImage, setGeneratedImage] = useState(null);
 
     const { isAiLoading, setIsAiLoading, handleBSMeter, handleEmergencyWombat } = useAIHandlers(setNotification);
 
-    const mutations = useProblemMutations(user, currentProblem, setIsAiLoading, setNotification);
+    const mutations = useProblemMutations(user, currentProblem, setIsAiLoading, setNotification, setGeneratedImage);
 
-    useProblemsSubscription(user, currentProblem, mutations.getAIAnalysis, setProblems, setCurrentProblem, isAiLoading);
+    useProblemsSubscription(user, currentProblem, mutations.getAIAnalysis, setProblems, setCurrentProblem, isAiLoading, analysisRequestedId, setAnalysisRequestedId);
 
     const value = {
         problems,
@@ -29,6 +31,7 @@ export const ProblemsProvider = ({ children }) => {
         setIsAiLoading,
         notification,
         setNotification,
+        generatedImage,
         startNewProblem: async () => {
             const docRef = await createNewProblem(user, partner);
             const newProblem = { id: docRef.id, ...(await getDoc(docRef)).data() };

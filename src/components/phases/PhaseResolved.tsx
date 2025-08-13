@@ -6,21 +6,21 @@ import { useProblems } from '../../context/ProblemsContext';
 /** Renders UI for the final, resolved state, with new features. */
 const PhaseResolved = () => {
     const { problem } = useCurrentProblemData();
-    const { isAiLoading, handleGenerateImage, handleCritique, handlePostMortemSubmit } = useProblems();
+    const { isAiLoading, handleGenerateImage, handleCritique, handlePostMortemSubmit, generatedImage } = useProblems();
     const [allowCritique, setAllowCritique] = useState(false);
     const [feedback, setFeedback] = useState('');
+    const [hasSubmittedFeedback, setHasSubmittedFeedback] = useState(false);
 
     if (!problem) return null;
 
     const isPostMortemTime = problem.solution_check_date && typeof problem.solution_check_date.toDate === 'function' && new Date() > problem.solution_check_date.toDate();
 
-    // Wrap the post-mortem submit handler to reset feedback after successful submission
-    const handlePostMortemSubmitWithReset = async (text) => {
-        const result = await handlePostMortemSubmit(text);
+    const handlePostMortem = async () => {
+        const result = await handlePostMortemSubmit(feedback);
         if (result && !result.error) {
             setFeedback('');
+            setHasSubmittedFeedback(true);
         }
-        return result;
     };
 
     return (
@@ -46,6 +46,11 @@ const PhaseResolved = () => {
                 <button onClick={handleGenerateImage} disabled={isAiLoading === 'image'} className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition">
                     {isAiLoading === 'image' ? 'Generating...' : 'Generate a Memento'}
                 </button>
+                {generatedImage && (
+                    <div className="mt-4">
+                        <img src={generatedImage} alt="Generated Memento" className="w-full max-w-md mx-auto rounded-lg border-2 border-purple-400" />
+                    </div>
+                )}
             </div>
 
             {isPostMortemTime && (
@@ -58,9 +63,14 @@ const PhaseResolved = () => {
                         placeholder="My honest feedback is..."
                         value={feedback}
                         onChange={(e) => setFeedback(e.target.value)}
+                        disabled={hasSubmittedFeedback}
                     />
-                    <button onClick={() => handlePostMortemSubmitWithReset(feedback)} className="mt-4 bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg transition">
-                        Submit Feedback
+                    <button
+                        onClick={handlePostMortem}
+                        disabled={hasSubmittedFeedback || !feedback}
+                        className="mt-4 bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-gray-600 disabled:cursor-not-allowed"
+                    >
+                        {hasSubmittedFeedback ? "Feedback Submitted" : "Submit Feedback"}
                     </button>
                 </div>
             )}

@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import { updateProblem } from '../services/firebase';
-import { getTranslation, getWager, getAIAnalysis as getWombatAnalysis, callGemini } from '../services/ai';
+import { getTranslation, getWager, getAIAnalysis as getWombatAnalysis, callGemini, callImageGenerator } from '../services/ai';
 
-export const useProblemMutations = (user, currentProblem, setIsAiLoading, setNotification) => {
+export const useProblemMutations = (user, currentProblem, setIsAiLoading, setNotification, setGeneratedImage) => {
 
     const handleUpdate = useCallback((problemId, data) => {
         updateProblem(problemId, data);
@@ -127,13 +127,17 @@ export const useProblemMutations = (user, currentProblem, setIsAiLoading, setNot
             const imagePrompt = await callGemini(prompt);
             if (imagePrompt) {
                 setNotification({ show: true, message: `Image Prompt: "${imagePrompt}"`, duration: 8000 });
+                const imageUrl = await callImageGenerator(imagePrompt);
+                if (imageUrl) {
+                    setGeneratedImage(imageUrl);
+                }
             } else {
                 setNotification({ show: true, message: "The Wombat is feeling uninspired. Try again later.", type: 'warning' });
             }
         } finally {
             setIsAiLoading(null);
         }
-    }, [currentProblem, setIsAiLoading, setNotification]);
+    }, [currentProblem, setIsAiLoading, setNotification, setGeneratedImage]);
 
     const handleCritique = useCallback(async () => {
         if (!currentProblem) return;

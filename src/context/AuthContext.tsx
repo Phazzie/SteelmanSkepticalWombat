@@ -70,7 +70,11 @@ export const AuthProvider = ({ children }) => {
         user,
         partner,
         isLoading,
-        updateUserName: (newName) => updateUserNameInDb(user.uid, newName),
+        updateUserName: (newName) => {
+            if (user) {
+                updateUserNameInDb(user.uid, newName);
+            }
+        },
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -64,3 +64,10 @@ export const getEmergencyWombat = () => {
     const prompt = `You are the Emergency Wombat. A user has clicked the emergency button. Provide a piece of generic, witty, and slightly unhelpful advice. Keep it to one or two sentences.`;
     return callGemini(prompt);
 }
+
+export const callImageGenerator = async (prompt) => {
+    // In a real app, this would call an image generation API.
+    // For now, we'll just return a placeholder.
+    console.log("Image generation prompt:", prompt);
+    return Promise.resolve("https://i.imgur.com/g6S8wS2.jpeg");
+};
