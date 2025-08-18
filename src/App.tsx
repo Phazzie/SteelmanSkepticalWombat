@@ -100,13 +100,20 @@ const MainApp = () => {
             return <p>Unknown phase. The Wombat is confused.</p>;
         }
 
+        const submitHandlers = {
+            private_versions: handlePrivateSubmit,
+            steelman: handleSteelmanSubmit,
+            propose_solutions: handleProposeSolution,
+            solution_steelman: handleSolutionSteelmanSubmit,
+        };
+
         const phaseProps = {
             problem: currentProblem,
             myRole,
             isAiLoading,
             onUpdate: handleUpdate,
             onAgree: handleAgreement,
-            onSubmit: handlePrivateSubmit, // This will be overridden in some phases
+            onSubmit: submitHandlers[currentProblem.status] || handlePrivateSubmit,
             onSave: handleUpdate, // for DraftTextarea
             onNext: (status) => handleUpdate(currentProblem.id, { status }),
             partnerName: partner?.name || 'Your Partner',
@@ -116,16 +123,6 @@ const MainApp = () => {
             onCritique: () => {},
             mementoImage: null,
         };
-
-        if (currentProblem.status === 'private_versions') {
-            phaseProps.onSubmit = handlePrivateSubmit;
-        } else if (currentProblem.status === 'steelman') {
-            phaseProps.onSubmit = handleSteelmanSubmit;
-        } else if (currentProblem.status === 'propose_solutions') {
-            phaseProps.onSubmit = handleProposeSolution;
-        } else if (currentProblem.status === 'solution_steelman') {
-            phaseProps.onSubmit = handleSolutionSteelmanSubmit;
-        }
 
         return (
             <div className="bg-gray-900 p-4 sm:p-6 rounded-xl shadow-2xl border border-gray-700">

@@ -1,10 +1,13 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
+import { doc } from 'firebase/firestore';
 import {
     onProblemsSnapshot,
     createNewProblem,
     updateProblem,
     getDoc,
     runTransaction,
+    db,
+    appId,
 } from '../services/firebase';
 import { getTranslation, getAIAnalysis as getWombatAnalysis, getWager, getBSAnalysis, getEmergencyWombat } from '../services/ai';
 import { AuthContext } from './AuthContext';
@@ -12,10 +15,11 @@ import { AuthContext } from './AuthContext';
 export const ProblemContext = createContext(null);
 
 export const ProblemProvider = ({ children }) => {
-    const { user } = useContext(AuthContext);
+    const { user, partner, setNotification } = useContext(AuthContext);
     const [problems, setProblems] = useState([]);
     const [currentProblem, setCurrentProblem] = useState(null);
     const [isAiLoading, setIsAiLoading] = useState(null);
+    const analysisInProgress = useRef(null);
 
     useEffect(() => {
         if (!user?.uid) return;
@@ -26,14 +30,17 @@ export const ProblemProvider = ({ children }) => {
                 const updatedCurrent = fetchedProblems.find(p => p.id === currentProblem.id);
                 if (updatedCurrent) {
                     setCurrentProblem(updatedCurrent);
-                    if (updatedCurrent.status === 'ai_review' && !updatedCurrent.ai_analysis && !isAiLoading) {
-                        getAIAnalysis(updatedCurrent);
+                    if (updatedCurrent.status === 'ai_review' && !updatedCurrent.ai_analysis && analysisInProgress.current !== updatedCurrent.id) {
+                        analysisInProgress.current = updatedCurrent.id;
+                        getAIAnalysis(updatedCurrent).finally(() => {
+                            analysisInProgress.current = null;
+                        });
                     }
                 }
             }
         });
         return () => unsubscribe();
-    }, [user?.uid, currentProblem?.id, isAiLoading]);
+    }, [user?.uid, currentProblem?.id]);
 
     const handleUpdate = (problemId, data) => {
         updateProblem(problemId, data);

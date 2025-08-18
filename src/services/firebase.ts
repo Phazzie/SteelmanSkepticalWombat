@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, query, where } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, query, where, runTransaction } from 'firebase/firestore';
 
 // The Firebase configuration is read from an environment variable.
 // See .env.example for more details.
@@ -9,8 +9,8 @@ const firebaseConfig = JSON.parse(import.meta.env.VITE_FIREBASE_CONFIG);
 // --- App Initialization ---
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-couples-app';
+export const db = getFirestore(app);
+export const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-couples-app';
 
 // --- Auth Functions ---
 export const onAuthChange = (callback) => onAuthStateChanged(auth, callback);

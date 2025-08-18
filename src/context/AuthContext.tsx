@@ -10,7 +10,16 @@ import {
     updateUserName as updateUserNameInDb,
 } from '../services/firebase';
 
-export const AuthContext = createContext(null);
+interface AuthContextType {
+    user: { uid: string; [key: string]: any } | null;
+    partner: { uid: string; [key: string]: any } | null;
+    isLoading: boolean;
+    notification: { show: boolean; message: string; type: string; duration: number };
+    setNotification: React.Dispatch<React.SetStateAction<{ show: boolean; message: string; type: string; duration: number }>>;
+    updateUserName: (newName: string) => void;
+}
+
+export const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -19,14 +28,25 @@ export const AuthProvider = ({ children }) => {
     const [notification, setNotification] = useState({ show: false, message: '', type: 'info', duration: 4000 });
 
     useEffect(() => {
-        const unsubscribe = onAuthChange(async (currentUser) => {
+        let unsubscribeUser = () => {};
+        let unsubscribePartner = () => {};
+
+        const unsubscribeAuth = onAuthChange(async (currentUser) => {
+            // Clean up previous listeners to prevent memory leaks
+            unsubscribeUser();
+            unsubscribePartner();
+            setPartner(null);
+
             if (currentUser) {
-                onUserSnapshot(currentUser.uid, async (snap) => {
+                unsubscribeUser = onUserSnapshot(currentUser.uid, async (snap) => {
                     if (snap.exists()) {
                         const userData = snap.data();
                         setUser({ uid: currentUser.uid, ...userData });
+
+                        // Clean up previous partner listener before creating a new one
+                        unsubscribePartner();
                         if (userData.partnerId) {
-                            onPartnerSnapshot(userData.partnerId, (partnerSnap) => {
+                            unsubscribePartner = onPartnerSnapshot(userData.partnerId, (partnerSnap) => {
                                 if (partnerSnap.exists()) {
                                     setPartner({ uid: userData.partnerId, ...partnerSnap.data() });
                                 } else {
@@ -62,7 +82,12 @@ export const AuthProvider = ({ children }) => {
             }
             setIsLoading(false);
         });
-        return () => unsubscribe();
+
+        return () => {
+            unsubscribeAuth();
+            unsubscribeUser();
+            unsubscribePartner();
+        };
     }, []);
 
     const updateUserName = (newName) => {
