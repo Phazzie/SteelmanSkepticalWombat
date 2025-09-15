@@ -11,6 +11,7 @@ const PhaseProposeSolutions = ({ problem, onSave, onSubmit, myRole }) => {
             <p className="text-gray-400 mb-4">Based on the verdict, propose your ideal, concrete solution. Don't worry about your partner yet. What do *you* think is the best path forward?</p>
             <DraftTextarea
                 value={problem[`${myRole}_proposed_solution`] || ''}
+                onChange={() => {}} // No-op since we save on blur
                 onSave={(text) => onSave(problem.id, { [`${myRole}_proposed_solution`]: text })}
                 onSubmit={onSubmit}
                 placeholder="My proposed solution is..."

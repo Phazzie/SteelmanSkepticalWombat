@@ -18,6 +18,7 @@ const PhaseSolutionSteelman = ({ problem, onSave, onSubmit, myRole, partnerName 
             </div>
             <DraftTextarea
                 value={problem[`${myRole}_solution_steelman`] || ''}
+                onChange={() => {}} // No-op since we save on blur
                 onSave={(text) => onSave(problem.id, { [`${myRole}_solution_steelman`]: text })}
                 onSubmit={onSubmit}
                 placeholder={`I understand ${partnerName}'s solution to mean...`}

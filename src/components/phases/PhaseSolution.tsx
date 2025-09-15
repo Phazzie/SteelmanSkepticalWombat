@@ -18,7 +18,7 @@ const PhaseSolution = ({ problem, onUpdate, onAgree, onBrainstorm, myRole, isAiL
 
             <textarea
                 className="w-full p-3 border-2 border-gray-700 rounded-lg bg-gray-800 text-gray-200 focus:ring-2 focus:ring-lime-400 focus:border-lime-400 transition"
-                rows="4"
+                rows={4}
                 defaultValue={problem.solution_statement}
                 onBlur={(e) => onUpdate(problem.id, { solution_statement: e.target.value })}
                 disabled={iHaveAgreed}
