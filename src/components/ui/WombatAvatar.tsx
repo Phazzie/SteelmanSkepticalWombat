@@ -11,7 +11,11 @@ const WombatAvatar = ({ className = "w-24 h-24 md:w-32 md:h-32", src = WOMBAT_AV
         src={src}
         alt="The Skeptical Wombat"
         className={`${className} rounded-full border-4 border-lime-400 shadow-lg object-cover`}
-        onError={(e) => { e.target.onerror = null; e.target.src='https://placehold.co/128x128/1F2937/A3E635?text=Wombat'; }}
+        onError={(e) => { 
+            const target = e.target as HTMLImageElement;
+            target.onerror = null; 
+            target.src='https://placehold.co/128x128/1F2937/A3E635?text=Wombat'; 
+        }}
     />
 );
 

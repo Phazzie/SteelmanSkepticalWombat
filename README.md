@@ -2,51 +2,178 @@
 
 The Skeptical Wombat is a web application designed to help partners navigate disagreements by cutting through polite language and exposing the core of the issue with blunt, witty, and insightful AI-driven analysis.
 
-## Getting Started
+## 🚀 Live Demo
 
-To get the project running locally, follow these steps:
+- **GitHub Pages**: [Coming Soon]
+- **Vercel**: [Coming Soon]
+- **Google Cloud**: [Coming Soon]
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/Phazzie/skeptical-wombat.git
-    cd skeptical-wombat
-    ```
+## ✨ Features
 
-2.  **Install dependencies:**
-    This project uses `npm` for package management.
-    ```bash
-    npm install
-    ```
+- **AI-Powered Analysis**: Uses Google Gemini with LangChain for sophisticated prompting
+- **Multi-Phase Problem Solving**: Structured approach to conflict resolution
+- **Real-time Collaboration**: Firebase-powered partner synchronization
+- **The Skeptical Wombat Persona**: Blunt, witty, and insightful AI feedback
+- **State Management**: Centralized state machine for predictable interactions
+- **Multi-Platform Deployment**: Ready for GitHub Pages, Google Cloud, and Vercel
 
-3.  **Set up environment variables:**
-    You will need to create a `.env` file in the root of the project. You can copy the example file to start:
-    ```bash
-    cp .env.example .env
-    ```
-    Then, open the `.env` file and add your specific credentials. At a minimum, you will need:
-    *   `VITE_GEMINI_API_KEY`: Your API key for the Google Gemini API.
-    *   Firebase configuration keys (`VITE_FIREBASE_...`).
+## 🛠 Getting Started
 
-4.  **Run the development server:**
-    ```bash
-    npm run dev
-    ```
-    The application will be available at `http://localhost:5173`.
+### Prerequisites
 
-## Key Technologies
+- Node.js 18+ 
+- npm or yarn
+- Firebase project (for backend)
+- Google Gemini API key
 
-*   **Frontend:** [React](https://react.dev/) with [Vite](https://vitejs.dev/) for a fast development experience.
-*   **AI:** [Google Gemini](https://deepmind.google/technologies/gemini/) provides the language model powering the AI's analysis.
-*   **Backend & Database:** [Firebase](https://firebase.google.com/) is used for backend services, including the database and user authentication.
-*   **Styling:** Standard CSS.
+### Installation
 
-## Project Structure
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/Phazzie/SteelmanSkepticalWombat.git
+   cd SteelmanSkepticalWombat
+   ```
 
-*   `src/`: Contains all the application source code.
-*   `src/components/`: Houses all React components.
-    *   `src/components/phases/`: Components that represent a specific "phase" of the user's journey through a problem.
-    *   `src/components/ui/`: General-purpose, reusable UI elements.
-*   `src/services/`: Contains modules for interacting with external APIs.
-    *   `src/services/ai.ts`: All logic for interacting with the Gemini API.
-    *   `src/services/firebase.ts`: All logic for interacting with Firebase.
-*   `src/context/`: Contains React context providers for global state management.
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables:**
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Edit `.env` and add your credentials:
+   ```bash
+   VITE_FIREBASE_CONFIG='{"apiKey":"your-api-key","authDomain":"your-project.firebaseapp.com","projectId":"your-project-id","storageBucket":"your-project.appspot.com","messagingSenderId":"123456789","appId":"your-app-id"}'
+   VITE_GEMINI_API_KEY="your-gemini-api-key"
+   ```
+
+4. **Run the development server:**
+   ```bash
+   npm run dev
+   ```
+   
+   The application will be available at `http://localhost:5173`.
+
+## 📚 Documentation
+
+- [Deployment Guide](DEPLOYMENT.md) - Complete deployment instructions
+- [Changelog](CHANGELOG.md) - Detailed consolidation history
+- [Agent Instructions](AGENTS.md) - Development guidelines
+
+## 🏗 Project Structure
+
+```
+src/
+├── components/          # React components
+│   ├── phases/         # Problem-solving phase components
+│   └── ui/             # Reusable UI components
+├── context/            # React context providers
+├── hooks/              # Custom React hooks
+├── services/           # External service integrations
+│   ├── ai.ts          # Enhanced AI service with LangChain
+│   ├── ai.test.ts     # AI service tests
+│   └── firebase.ts    # Firebase integration
+├── state/              # State management
+│   └── problemMachine.ts # State machine for problem workflow
+├── types/              # TypeScript type definitions
+├── constants/          # Application constants
+└── styles.css          # Global styles
+```
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with UI
+npm run test:ui
+
+# Type checking
+npm run type-check
+```
+
+## 🚀 Deployment
+
+The application is configured for deployment on multiple platforms:
+
+### GitHub Pages
+```bash
+# Automatic deployment on push to main branch
+# Or manually trigger GitHub Actions
+```
+
+### Vercel
+```bash
+# Connect repository to Vercel dashboard
+# Or use CLI: vercel --prod
+```
+
+### Google Cloud
+```bash
+# App Engine
+gcloud app deploy
+
+# Cloud Run
+docker build -t gcr.io/PROJECT_ID/skeptical-wombat .
+gcloud run deploy
+```
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions.
+
+## 🔧 Development
+
+### Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm test` - Run tests
+- `npm run lint` - Lint code
+- `npm run type-check` - Check TypeScript types
+
+### Key Technologies
+
+- **Frontend**: React 18 + TypeScript + Vite
+- **AI**: Google Gemini + LangChain
+- **Backend**: Firebase (Authentication + Firestore)
+- **Testing**: Vitest
+- **Deployment**: Multi-platform (GitHub Pages, Vercel, Google Cloud)
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+Please read [AGENTS.md](AGENTS.md) for development guidelines and The Skeptical Wombat persona requirements.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Google Gemini for AI capabilities
+- Firebase for real-time backend
+- LangChain for enhanced prompting
+- The open-source community for amazing tools
+
+## 📞 Support
+
+For deployment issues or questions:
+1. Check the [Deployment Guide](DEPLOYMENT.md)
+2. Review the [Changelog](CHANGELOG.md)
+3. Open an issue on GitHub
+
+---
+
+**The Skeptical Wombat** - *Cutting through relationship BS, one disagreement at a time.* 🦝

@@ -41,6 +41,7 @@ const MainApp = () => {
         handleUpdate,
         handleAgreement,
         handleSteelmanApproval,
+        handleSteelmanSubmit,
         handlePrivateSubmit,
         handleProposeSolution,
         handleSolutionSteelmanSubmit,
@@ -93,7 +94,7 @@ const MainApp = () => {
                 phaseComponent = <PhaseTranslation problem={currentProblem} onNext={() => handleUpdate(currentProblem.id, {status: 'steelman'})} myRole={myRole} partnerName={partner?.name} />;
                 break;
             case 'steelman':
-                phaseComponent = <PhaseSteelman problem={currentProblem} onSave={handleUpdate} onSubmit={handleSteelmanSubmit} myRole={myRole} isAiLoading={isAiLoading}/>;
+                phaseComponent = <PhaseSteelman problem={currentProblem} onSave={handleUpdate} onSubmit={() => handleSteelmanSubmit(currentProblem[`${myRole}_steelman`] || '')} myRole={myRole} isAiLoading={isAiLoading}/>;
                 break;
             case 'steelman_approval':
                 phaseComponent = <PhaseSteelmanApproval problem={currentProblem} onApprove={handleSteelmanApproval} myRole={myRole} partnerName={partner?.name || 'Your Partner'} />;

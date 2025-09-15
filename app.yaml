@@ -1,0 +1,24 @@
+runtime: nodejs18
+
+automatic_scaling:
+  max_instances: 10
+  min_instances: 0
+  target_cpu_utilization: 0.6
+
+handlers:
+- url: /static
+  static_dir: dist/assets
+  secure: always
+
+- url: /(.*\.(js|css|ico|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot))$
+  static_files: dist/\1
+  upload: dist/(.*\.(js|css|ico|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot))$
+  secure: always
+
+- url: /.*
+  static_files: dist/index.html
+  upload: dist/index.html
+  secure: always
+
+env_variables:
+  NODE_ENV: production

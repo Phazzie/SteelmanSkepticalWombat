@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import {
     onAuthChange,
     anonymousSignIn,
@@ -15,9 +15,38 @@ import {
 } from '../services/firebase';
 import { getTranslation, getAIAnalysis as getWombatAnalysis, getWager, getBSAnalysis, getEmergencyWombat } from '../services/ai';
 
-export const AppContext = createContext(null);
+interface AppContextType {
+    user: any;
+    partner: any;
+    problems: any[];
+    currentProblem: any;
+    isLoading: boolean;
+    isAiLoading: any;
+    notification: any;
+    setNotification: (notification: any) => void;
+    signIn: () => void;
+    signInWithToken: (token: string) => void;
+    invitePartner: (inviteeId: string) => void;
+    updateUserName: (newName: string) => void;
+    createProblem: () => void;
+    setCurrentProblemById: (id: string) => void;
+    handleUpdate: (problemId: string, data: any) => void;
+    handleSteelmanSubmit: (text: string) => void;
+    handleSteelmanApproval: () => void;
+    handleSolutionSteelmanSubmit: (text: string) => void;
+    handleMemento: () => void;
+    handleEmergencyWombat: () => void;
+    startNewProblem: () => void;
+    setCurrentProblem: (problem: any) => void;
+    handleAgreement: (type: string) => void;
+    handlePrivateSubmit: (text: string) => void;
+    handleProposeSolution: (text: string) => void;
+    handleBSMeter: (text: string) => void;
+}
 
-export const AppProvider = ({ children }) => {
+export const AppContext = createContext<AppContextType | null>(null);
+
+export const AppProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState(null);
     const [partner, setPartner] = useState(null);
     const [problems, setProblems] = useState([]);
@@ -25,6 +54,15 @@ export const AppProvider = ({ children }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [isAiLoading, setIsAiLoading] = useState(null);
     const [notification, setNotification] = useState({ show: false, message: '', type: 'info', duration: 4000 });
+
+    const getAIAnalysis = useCallback(async (problem) => {
+        setIsAiLoading('verdict');
+        const analysisText = await getWombatAnalysis(problem);
+        if (analysisText) {
+            await updateProblem(problem.id, { ai_analysis: analysisText, status: 'propose_solutions' });
+        }
+        setIsAiLoading(null);
+    }, []);
 
     useEffect(() => {
         const unsubscribe = onAuthChange(async (currentUser) => {
@@ -57,7 +95,7 @@ export const AppProvider = ({ children }) => {
                 });
             } else {
                 try {
-                    const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                    const token = (globalThis as any).__initial_auth_token || null;
                     if (token) {
                         await customTokenSignIn(token);
                     } else {
@@ -65,7 +103,7 @@ export const AppProvider = ({ children }) => {
                     }
                 } catch (error) {
                     console.error("Authentication Error:", error);
-                    setNotification({show: true, message: "Authentication failed. Please refresh.", type: 'warning'});
+                    setNotification({show: true, message: "Authentication failed. Please refresh.", type: 'warning', duration: 4000});
                 }
             }
             setIsLoading(false);
@@ -89,22 +127,22 @@ export const AppProvider = ({ children }) => {
             }
         });
         return () => unsubscribe();
-    }, [user?.uid, currentProblem?.id, isAiLoading]);
+    }, [user?.uid, currentProblem?.id, isAiLoading, currentProblem, getAIAnalysis]);
 
     const handleUpdate = (problemId, data) => {
         updateProblem(problemId, data);
     };
 
-    const handleAgreement = (type) => {
+    const handleAgreement = (type: string) => {
         if (!currentProblem || !user) return;
         const myRole = currentProblem.roles[user.uid];
         const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
         if (type === 'problem') {
-            const updates = { [`${myRole}_agreed_problem`]: true };
+            const updates: any = { [`${myRole}_agreed_problem`]: true };
             if (currentProblem[`${partnerRole}_agreed_problem`]) updates.status = 'private_versions';
             handleUpdate(currentProblem.id, updates);
         } else if (type === 'solution') {
-            const updates = { [`${myRole}_agreed_solution`]: true };
+            const updates: any = { [`${myRole}_agreed_solution`]: true };
             if (currentProblem[`${partnerRole}_agreed_solution`]) {
                 updates.status = 'resolved';
                 updates.solution_check_date = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -117,7 +155,7 @@ export const AppProvider = ({ children }) => {
         if (!currentProblem || !user) return;
         const myRole = currentProblem.roles[user.uid];
         const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
-        const updates = { [`${myRole}_approved_steelman`]: true };
+        const updates: any = { [`${myRole}_approved_steelman`]: true };
         if (currentProblem[`${partnerRole}_approved_steelman`]) {
             updates.status = 'ai_review';
         }
@@ -149,15 +187,6 @@ export const AppProvider = ({ children }) => {
             updates.status = 'steelman_approval';
         }
         handleUpdate(currentProblem.id, updates);
-    };
-
-    const getAIAnalysis = async (problem) => {
-        setIsAiLoading('verdict');
-        const analysisText = await getWombatAnalysis(problem);
-        if (analysisText) {
-            await handleUpdate(problem.id, { ai_analysis: analysisText, status: 'propose_solutions' });
-        }
-        setIsAiLoading(null);
     };
 
     const handleProposeSolution = (text) => {
@@ -200,6 +229,11 @@ export const AppProvider = ({ children }) => {
         isAiLoading,
         notification,
         setNotification,
+        signIn: () => anonymousSignIn(),
+        signInWithToken: (token: string) => customTokenSignIn(token),
+        invitePartner: (inviteeId: string) => linkPartners(user.uid, inviteeId),
+        createProblem: () => {},
+        setCurrentProblemById: (_id: string) => {},
         startNewProblem: async () => {
             const docRef = await createNewProblem(user, partner);
             const newProblem = { id: docRef.id, ...(await getDoc(docRef)).data() };
@@ -217,13 +251,17 @@ export const AppProvider = ({ children }) => {
         handleBSMeter: async (text) => {
             setIsAiLoading('bs-meter');
             const result = await getBSAnalysis(text);
-            setNotification({ show: true, message: result || "The Wombat is speechless.", type: 'info' });
+            setNotification({ show: true, message: result || "The Wombat is speechless.", type: 'info', duration: 4000 });
             setIsAiLoading(null);
+        },
+        handleMemento: async () => {
+            // Placeholder for memento functionality
+            setNotification({ show: true, message: "Memento feature coming soon!", type: 'info', duration: 4000 });
         },
         handleEmergencyWombat: async () => {
             setIsAiLoading('emergency');
             const result = await getEmergencyWombat();
-            setNotification({ show: true, message: result || "The Wombat is on a coffee break.", type: 'info' });
+            setNotification({ show: true, message: result || "The Wombat is on a coffee break.", type: 'info', duration: 4000 });
             setIsAiLoading(null);
         },
     };

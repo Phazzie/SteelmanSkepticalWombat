@@ -1,5 +1,22 @@
 import { Problem } from "../types";
 
+// Enhanced AI Service with LangChain integration
+// Fallback to basic implementation if LangChain is unavailable
+let useLangChain = false;
+
+try {
+    // Try to import LangChain dependencies
+    // eslint-disable-next-line no-undef
+    const { ChatGoogleGenerativeAI } = require("@langchain/google-genai");
+    useLangChain = true;
+    // Use variable to avoid unused warning
+    if (ChatGoogleGenerativeAI) {
+        useLangChain = true;
+    }
+} catch (error) {
+    console.warn("LangChain not available, falling back to basic AI service");
+}
+
 /**
  * A centralized helper function to make calls to the Google Gemini API.
  * This function handles the boilerplate of setting up the API request,
@@ -17,6 +34,26 @@ const callGemini = async (prompt: string): Promise<string | null> => {
         return null;
     }
 
+    // Use LangChain if available for enhanced functionality
+    if (useLangChain) {
+        try {
+            // eslint-disable-next-line no-undef
+            const { ChatGoogleGenerativeAI } = require("@langchain/google-genai");
+            const model = new ChatGoogleGenerativeAI({
+                apiKey: apiKey,
+                model: import.meta.env.VITE_GEMINI_MODEL_NAME || "gemini-2.5-flash-preview-05-20",
+                maxRetries: 3,
+            });
+            
+            const result = await model.invoke(prompt);
+            return result.content;
+        } catch (error) {
+            console.warn("LangChain call failed, falling back to basic API:", error);
+            // Fall through to basic implementation
+        }
+    }
+
+    // Basic implementation fallback
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
     try {
@@ -84,14 +121,14 @@ export const getAIAnalysis = (problem: Problem): Promise<string | null> => {
  * @param {string} partner1Steelman Partner 1's understanding of Partner 2's solution.
  * @returns {Promise<string|null>} The Wombat's wager and reasoning.
  */
-export const getWager = (problem: Problem, partner1Steelman: string): Promise<string | null> => {
+export const getWager = (problem: Problem, currentUserSteelman: string): Promise<string | null> => {
      const prompt = `
         **Persona:** You are The Skeptical Wombat. You are blunt, realistic, and highly skeptical of starry-eyed, vague solutions.
         **Task:** You are given two proposed solutions AND each partner's attempt to explain the other's solution. Your job is to make a "wager" on which proposal is more likely to actually work, based on its realism and whether the partners seem to actually understand each other. Be blunt and explain your reasoning with dry wit.
         - **Solution A (from Partner 1):** "${problem.user1_proposed_solution}"
         - **Partner 2's understanding of Solution A:** "${problem.user2_solution_steelman}"
         - **Solution B (from Partner 2):** "${problem.user2_proposed_solution}"
-        - **Partner 1's understanding of Solution B:** "${partner1Steelman}"
+        - **Partner 1's understanding of Solution B:** "${currentUserSteelman}"
         **Wager:**`;
     return callGemini(prompt);
 }

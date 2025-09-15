@@ -11,6 +11,7 @@ const PhasePrivateVersion = ({ problem, onSave, onSubmit, myRole, isAiLoading })
             <p className="text-gray-400 mb-4">Here's your chance. Say what you really think. Your partner will <span className="font-bold text-red-400">not</span> see this. The Wombat will, so don't waste its time. Your draft saves when you click away.</p>
             <DraftTextarea
                 value={problem[`${myRole}_private_version`]}
+                onChange={() => {}} // No-op since we save on blur
                 onSave={(text) => onSave(problem.id, { [`${myRole}_private_version`]: text })}
                 onSubmit={onSubmit}
                 placeholder="From my point of view, the issue is..."

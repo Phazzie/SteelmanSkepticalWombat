@@ -10,7 +10,7 @@ const PhaseAgreeStatement = ({ problem, onUpdate, onAgree, myRole }) => {
             <p className="text-gray-400 mb-4">Collaborate on one, neutral sentence. No blame, no feelings. Just state the situation as if you were a boring robot. The Wombat is watching.</p>
             <textarea
                 className="w-full p-3 border-2 border-gray-700 rounded-lg bg-gray-800 text-gray-200 focus:ring-2 focus:ring-lime-400 focus:border-lime-400 transition"
-                rows="4"
+                rows={4}
                 defaultValue={problem.problem_statement}
                 onBlur={(e) => onUpdate(problem.id, { problem_statement: e.target.value })}
                 disabled={iHaveAgreed}

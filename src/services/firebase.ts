@@ -1,50 +1,51 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, User } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, query, where } from 'firebase/firestore';
 
 // The Firebase configuration is read from an environment variable.
 // See .env.example for more details.
-const firebaseConfig = JSON.parse(import.meta.env.VITE_FIREBASE_CONFIG);
+const firebaseConfig = JSON.parse(import.meta.env.VITE_FIREBASE_CONFIG || '{}');
 
 // --- App Initialization ---
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-couples-app';
+const appId = (globalThis as any).__app_id || 'default-couples-app';
 
 // --- Auth Functions ---
-export const onAuthChange = (callback) => onAuthStateChanged(auth, callback);
+export const onAuthChange = (callback: (user: User | null) => void) => onAuthStateChanged(auth, callback);
 export const anonymousSignIn = () => signInAnonymously(auth);
-export const customTokenSignIn = (token) => signInWithCustomToken(auth, token);
+export const customTokenSignIn = (token: string) => signInWithCustomToken(auth, token);
 
 // --- User Functions ---
-export const getUserDoc = (uid) => doc(db, `artifacts/${appId}/users/${uid}`);
+export const getUserDoc = (uid: string) => doc(db, `artifacts/${appId}/users/${uid}`);
 
-export const linkPartners = async (inviterId, inviteeId) => {
+export const linkPartners = async (inviterId: string, inviteeId: string) => {
     const inviterRef = doc(db, `artifacts/${appId}/users/${inviterId}`);
     const inviteeRef = doc(db, `artifacts/${appId}/users/${inviteeId}`);
     await setDoc(inviteeRef, { partnerId: inviterId, uid: inviteeId, name: `User ${inviteeId.substring(0,4)}` });
     await setDoc(inviterRef, { partnerId: inviteeId }, { merge: true });
 };
 
-export const createUserProfile = (uid) => {
+export const createUserProfile = (uid: string) => {
     const userDocRef = doc(db, `artifacts/${appId}/users/${uid}`);
-    return setDoc(userDocRef, { uid, name: `User ${uid.substring(0,4)}` });
+    return setDoc(userDocRef, { uid, name: `User ${uid.substring(0,4)}`, partnerId: null });
 }
 
-export const updateUserName = (uid, newName) => {
+export const updateUserName = (uid: string, newName: string) => {
     if (uid && newName) {
         const userDocRef = doc(db, `artifacts/${appId}/users/${uid}`);
-        return updateDoc(userDocRef, { name: newName });
+        const sanitizedName = newName.trim().substring(0, 50);
+        return updateDoc(userDocRef, { name: sanitizedName });
     }
 };
 
-export const onUserSnapshot = (uid, callback) => {
+export const onUserSnapshot = (uid: string, callback: (doc: any) => void) => {
     const userDocRef = doc(db, `artifacts/${appId}/users/${uid}`);
     return onSnapshot(userDocRef, callback);
 };
 
-export const onPartnerSnapshot = (partnerId, callback) => {
+export const onPartnerSnapshot = (partnerId: string, callback: (doc: any) => void) => {
     const partnerDocRef = doc(db, `artifacts/${appId}/users/${partnerId}`);
     return onSnapshot(partnerDocRef, callback);
 };
@@ -53,12 +54,12 @@ export const onPartnerSnapshot = (partnerId, callback) => {
 // --- Problem Functions ---
 const problemsCollection = collection(db, `artifacts/${appId}/public/data/problems`);
 
-export const onProblemsSnapshot = (uid, callback) => {
+export const onProblemsSnapshot = (uid: string, callback: (snapshot: any) => void) => {
     const q = query(problemsCollection, where('participants', 'array-contains', uid));
     return onSnapshot(q, callback);
 };
 
-export const createNewProblem = (user, partner) => {
+export const createNewProblem = (user: any, partner: any) => {
     const newProblem = {
         participants: [user.uid, partner.uid],
         roles: { [user.uid]: 'user1', [partner.uid]: 'user2' },
@@ -97,7 +98,7 @@ export const createNewProblem = (user, partner) => {
     return addDoc(problemsCollection, newProblem);
 };
 
-export const updateProblem = (problemId, data) => {
+export const updateProblem = (problemId: string, data: any) => {
     const problemRef = doc(db, `artifacts/${appId}/public/data/problems/${problemId}`);
     return updateDoc(problemRef, data);
 };

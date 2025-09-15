@@ -3,7 +3,8 @@ import React from 'react';
 /** Renders UI for Phase 10: Collaborating on a final solution. */
 const PhaseSolution = ({ problem, onUpdate, onAgree, onBrainstorm, myRole, isAiLoading }) => {
     const iHaveAgreed = problem[`${myRole}_agreed_solution`];
-    const partnerHasAgreed = problem[`${myRole === 'user1' ? 'user2' : 'user1'}_agreed_solution`];
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _partnerHasAgreed = problem[`${myRole === 'user1' ? 'user2' : 'user1'}_agreed_solution`];
     return (
         <div>
             <h3 className="text-2xl font-serif text-white mb-2">Phase 10: Agree on a Final Solution</h3>
@@ -18,7 +19,7 @@ const PhaseSolution = ({ problem, onUpdate, onAgree, onBrainstorm, myRole, isAiL
 
             <textarea
                 className="w-full p-3 border-2 border-gray-700 rounded-lg bg-gray-800 text-gray-200 focus:ring-2 focus:ring-lime-400 focus:border-lime-400 transition"
-                rows="4"
+                rows={4}
                 defaultValue={problem.solution_statement}
                 onBlur={(e) => onUpdate(problem.id, { solution_statement: e.target.value })}
                 disabled={iHaveAgreed}
