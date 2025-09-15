@@ -20,5 +20,25 @@ export interface Problem {
     user2_proposed_solution: string;
     user1_solution_steelman: string;
     user2_solution_steelman: string;
-    // Add any other properties that a problem object might have.
-  }
+    // Additional properties from other branches
+    roles?: { [userId: string]: 'user1' | 'user2' };
+    status?: string;
+    participants?: string[];
+    createdAt?: Date;
+    user1_agreed_problem?: boolean;
+    user2_agreed_problem?: boolean;
+    user1_submitted_private?: boolean;
+    user2_submitted_private?: boolean;
+    user1_translation?: string;
+    user2_translation?: string;
+    user1_manipulation_analysis?: string;
+    user2_manipulation_analysis?: string;
+    user1_has_proposed?: boolean;
+    user2_has_proposed?: boolean;
+    user1_submitted_solution_steelman?: boolean;
+    user2_submitted_solution_steelman?: boolean;
+    user1_agreed_solution?: boolean;
+    user2_agreed_solution?: boolean;
+    wombats_wager?: string;
+    solution_check_date?: Date;
+}
