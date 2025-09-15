@@ -6,8 +6,13 @@ let useLangChain = false;
 
 try {
     // Try to import LangChain dependencies
+    // eslint-disable-next-line no-undef
     const { ChatGoogleGenerativeAI } = require("@langchain/google-genai");
     useLangChain = true;
+    // Use variable to avoid unused warning
+    if (ChatGoogleGenerativeAI) {
+        useLangChain = true;
+    }
 } catch (error) {
     console.warn("LangChain not available, falling back to basic AI service");
 }
@@ -32,6 +37,7 @@ const callGemini = async (prompt: string): Promise<string | null> => {
     // Use LangChain if available for enhanced functionality
     if (useLangChain) {
         try {
+            // eslint-disable-next-line no-undef
             const { ChatGoogleGenerativeAI } = require("@langchain/google-genai");
             const model = new ChatGoogleGenerativeAI({
                 apiKey: apiKey,

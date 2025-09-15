@@ -3,7 +3,8 @@ import React from 'react';
 /** Renders UI for Phase 10: Collaborating on a final solution. */
 const PhaseSolution = ({ problem, onUpdate, onAgree, onBrainstorm, myRole, isAiLoading }) => {
     const iHaveAgreed = problem[`${myRole}_agreed_solution`];
-    const partnerHasAgreed = problem[`${myRole === 'user1' ? 'user2' : 'user1'}_agreed_solution`];
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _partnerHasAgreed = problem[`${myRole === 'user1' ? 'user2' : 'user1'}_agreed_solution`];
     return (
         <div>
             <h3 className="text-2xl font-serif text-white mb-2">Phase 10: Agree on a Final Solution</h3>

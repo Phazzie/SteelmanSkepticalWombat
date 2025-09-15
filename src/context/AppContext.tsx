@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import {
     onAuthChange,
     anonymousSignIn,
@@ -54,6 +54,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [isAiLoading, setIsAiLoading] = useState(null);
     const [notification, setNotification] = useState({ show: false, message: '', type: 'info', duration: 4000 });
+
+    const getAIAnalysis = useCallback(async (problem) => {
+        setIsAiLoading('verdict');
+        const analysisText = await getWombatAnalysis(problem);
+        if (analysisText) {
+            await updateProblem(problem.id, { ai_analysis: analysisText, status: 'propose_solutions' });
+        }
+        setIsAiLoading(null);
+    }, []);
 
     useEffect(() => {
         const unsubscribe = onAuthChange(async (currentUser) => {
@@ -118,7 +127,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             }
         });
         return () => unsubscribe();
-    }, [user?.uid, currentProblem?.id, isAiLoading]);
+    }, [user?.uid, currentProblem?.id, isAiLoading, currentProblem, getAIAnalysis]);
 
     const handleUpdate = (problemId, data) => {
         updateProblem(problemId, data);
@@ -180,15 +189,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         handleUpdate(currentProblem.id, updates);
     };
 
-    const getAIAnalysis = async (problem) => {
-        setIsAiLoading('verdict');
-        const analysisText = await getWombatAnalysis(problem);
-        if (analysisText) {
-            await handleUpdate(problem.id, { ai_analysis: analysisText, status: 'propose_solutions' });
-        }
-        setIsAiLoading(null);
-    };
-
     const handleProposeSolution = (text) => {
         if (!currentProblem || !user) return;
         const myRole = currentProblem.roles[user.uid];
@@ -233,7 +233,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         signInWithToken: (token: string) => customTokenSignIn(token),
         invitePartner: (inviteeId: string) => linkPartners(user.uid, inviteeId),
         createProblem: () => {},
-        setCurrentProblemById: (id: string) => {},
+        setCurrentProblemById: (_id: string) => {},
         startNewProblem: async () => {
             const docRef = await createNewProblem(user, partner);
             const newProblem = { id: docRef.id, ...(await getDoc(docRef)).data() };
