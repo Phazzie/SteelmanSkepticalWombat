@@ -1,0 +1,37 @@
+# DigitalOcean App Platform specification
+#
+# This file defines the components and configuration of the Skeptical Wombat application.
+# For more information, see the official documentation:
+# https://docs.digitalocean.com/products/app-platform/reference/app-spec/
+
+name: skeptical-wombat
+
+# Define the services that make up the application.
+services:
+  # Frontend service (React application served with Nginx)
+  - name: frontend
+    # The `github` block tells the App Platform how to find our source code.
+    # It will automatically clone the repository and build the Docker image.
+    github:
+      # Replace with your GitHub repository in the format: <username>/<repository>
+      # This is automatically inferred by DigitalOcean if the app is created from the UI.
+      repo: Phazzie/SteelmanSkepticalWombat
+      # The branch to deploy from.
+      branch: main
+
+    # Path to the Dockerfile relative to the repository root.
+    dockerfile_path: docker/frontend/Dockerfile
+
+    # The HTTP port that the container listens on.
+    # Our frontend Dockerfile EXPOSEs 8080.
+    http_port: 8080
+
+    # Define the instance size and count for the service.
+    # `basic-xxs` is a good starting point for a small application.
+    instance_size_slug: basic-xxs
+    instance_count: 1
+
+    # Define the public routes for the service.
+    # This configuration makes the frontend service accessible at the root URL.
+    routes:
+      - path: /

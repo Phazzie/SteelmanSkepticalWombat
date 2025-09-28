@@ -4,16 +4,18 @@ FROM node:18-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files from the root
+COPY ./package*.json ./
 
 # Install dependencies
+# Using `npm ci` for reproducible builds
 RUN npm ci --only=production
 
-# Copy source code
+# Copy the rest of the application source code from the root
 COPY . .
 
 # Build the application
+# The `build` script is defined in package.json
 RUN npm run build
 
 # Use nginx to serve the static files

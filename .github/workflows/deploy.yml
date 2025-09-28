@@ -1,0 +1,112 @@
+# .github/workflows/deploy.yml
+
+# This workflow handles the secure build and deployment of the application.
+# It integrates SLSA provenance generation to create a verifiable, tamper-proof build process.
+# The final, attested container image is deployed to the DigitalOcean App Platform.
+name: Secure Build and Deploy to DigitalOcean
+
+on:
+  # Trigger the workflow on pushes to the `main` branch.
+  push:
+    branches:
+      - main
+  # Allow the workflow to be triggered manually from the GitHub Actions UI.
+  workflow_dispatch:
+
+# Environment variables available to all jobs in the workflow.
+env:
+  # The container registry to use. GitHub Container Registry is used by default.
+  REGISTRY: ghcr.io
+  # The name of the container image, derived from the repository name.
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # This job builds the Docker image and pushes it to the container registry.
+  build-and-push:
+    name: Build and Push Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # Required to push container images to GHCR.
+    outputs:
+      image_digest: ${{ steps.push.outputs.digest }}
+      image_tag: ${{ steps.vars.outputs.tag }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate image tag from Git SHA
+        id: vars
+        run: echo "tag=$(echo ${GITHUB_SHA::7})" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+  # This job generates SLSA provenance for the container image built in the previous job.
+  slsa-provenance:
+    name: Generate SLSA Provenance
+    needs: build-and-push
+    permissions:
+      actions: read # To read workflow context.
+      id-token: write # To sign the provenance with Sigstore.
+      packages: write # To push the attestation to GHCR.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
+    with:
+      image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      digest: ${{ needs.build-and-push.outputs.image_digest }}
+      registry-username: ${{ github.actor }}
+    secrets:
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
+
+  # This job deploys the attested container image to DigitalOcean App Platform.
+  deploy:
+    name: Deploy to App Platform
+    needs: [build-and-push, slsa-provenance]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install yq for YAML processing
+        run: sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && sudo chmod +x /usr/bin/yq
+
+      - name: Update app spec to use the new container image
+        run: |
+          yq '.services[0].image.registry_type = "GHCR" |
+              .services[0].image.registry = "${{ env.REGISTRY }}" |
+              .services[0].image.repository = "${{ env.IMAGE_NAME }}" |
+              .services[0].image.tag = "${{ needs.build-and-push.outputs.image_tag }}" |
+              del(.services[0].github) |
+              del(.services[0].dockerfile_path)' .do/app.yaml > .do/app_deploy.yaml
+          echo "--- Generated .do/app_deploy.yaml ---"
+          cat .do/app_deploy.yaml
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Update and deploy DigitalOcean App
+        run: doctl apps update ${{ secrets.DIGITALOCEAN_APP_ID }} --spec .do/app_deploy.yaml --wait
