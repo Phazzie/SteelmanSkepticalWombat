@@ -202,13 +202,13 @@ const MainApp = () => {
                                 <div className="space-y-2 max-h-[60vh] overflow-y-auto">
                                     {problems.filter(p => activeTab === 'active' ? p.status !== 'resolved' : p.status === 'resolved').map(p => (
                                         <div key={p.id} onClick={() => setCurrentProblem(p)} className={`p-4 rounded-lg cursor-pointer transition ${currentProblem?.id === p.id ? 'bg-lime-900/50 ring-2 ring-lime-400' : 'bg-gray-800 hover:bg-gray-700'}`}>
-                                            <p className="font-semibold truncate text-white">{p.problem_statement || `Problem from ${new Date(p.createdAt.seconds * 1000).toLocaleDateString()}`}</p>
+                                            <p className="font-semibold truncate text-white">{p.problem_statement || `Problem from ${p.createdAt?.toDate ? new Date(p.createdAt.toDate()).toLocaleDateString() : new Date(p.createdAt).toLocaleDateString()}`}</p>
                                             <span className={`text-xs font-medium px-2 py-1 rounded-full ${ p.status === 'resolved' ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'}`}>{p.status.replace(/_/g, ' ')}</span>
                                         </div>
                                     ))}
                                     {activeTab === 'trophy' && problems.filter(p=>p.status === 'resolved').length === 0 &&
                                         <div className="text-center p-8 text-gray-500">
-                                            <img src={WOMBAT_TROPHY_URL} className="w-32 h-32 mx-auto rounded-full opacity-30" />
+                                            <img src={WOMBAT_TROPHY_URL} alt="Empty Trophy Room" className="w-32 h-32 mx-auto rounded-full opacity-30" />
                                             <p className="mt-4 font-serif">The Trophy Room is depressingly empty.</p>
                                             <p className="text-sm">Try solving a problem first.</p>
                                         </div>

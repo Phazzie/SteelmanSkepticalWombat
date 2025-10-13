@@ -45,4 +45,6 @@ const DraftTextarea = React.forwardRef<HTMLTextAreaElement, DraftTextareaProps>(
     }
 );
 
+DraftTextarea.displayName = 'DraftTextarea';
+
 export default DraftTextarea;

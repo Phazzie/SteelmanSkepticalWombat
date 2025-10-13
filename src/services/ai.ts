@@ -8,7 +8,6 @@ try {
     // Try to import LangChain dependencies
     // eslint-disable-next-line no-undef
     const { ChatGoogleGenerativeAI } = require("@langchain/google-genai");
-    useLangChain = true;
     // Use variable to avoid unused warning
     if (ChatGoogleGenerativeAI) {
         useLangChain = true;
