@@ -1,12 +1,28 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import DraftTextarea from '../ui/DraftTextarea';
 
 /** Renders UI for the new Phase 8: Steelmanning the partner's proposed solution. */
 const PhaseSolutionSteelman = ({ problem, onSave, onSubmit, myRole, partnerName }) => {
+    const [draftText, setDraftText] = useState(problem[`${myRole}_solution_steelman`] || '');
+    
+    useEffect(() => {
+        setDraftText(problem[`${myRole}_solution_steelman`] || '');
+    }, [problem, myRole]);
+
     const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
     const partnerSolution = problem[`${partnerRole}_proposed_solution`];
     const iHaveSubmitted = !!problem[`${myRole}_solution_steelman`];
     const partnerHasSubmitted = !!problem[`${partnerRole}_solution_steelman`];
+
+    const handleTextChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setDraftText(event.target.value);
+    };
+
+    const handleSave = () => {
+        if (draftText !== problem[`${myRole}_solution_steelman`]) {
+            onSave(problem.id, { [`${myRole}_solution_steelman`]: draftText });
+        }
+    };
 
     return (
         <div>
@@ -17,9 +33,9 @@ const PhaseSolutionSteelman = ({ problem, onSave, onSubmit, myRole, partnerName 
                 <p className="text-gray-200 whitespace-pre-wrap">{partnerSolution || "Waiting for partner..."}</p>
             </div>
             <DraftTextarea
-                value={problem[`${myRole}_solution_steelman`] || ''}
-                onChange={() => {}} // No-op since we save on blur
-                onSave={(text) => onSave(problem.id, { [`${myRole}_solution_steelman`]: text })}
+                value={draftText}
+                onChange={handleTextChange}
+                onSave={handleSave}
                 onSubmit={onSubmit}
                 placeholder={`I understand ${partnerName}'s solution to mean...`}
                 disabled={iHaveSubmitted || !partnerSolution}

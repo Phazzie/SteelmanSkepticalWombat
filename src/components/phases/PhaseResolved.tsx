@@ -3,7 +3,7 @@ import { WOMBAT_TROPHY_URL } from '../../constants';
 
 /** Renders UI for the final, resolved state, with new features. */
 const PhaseResolved = ({ problem, onUpdate: _onUpdate, myRole, onGenerateImage, isAiLoading, mementoImage, onCritique }) => {
-    const isPostMortemTime = problem.solution_check_date && new Date() > problem.solution_check_date.toDate();
+    const isPostMortemTime = problem.solution_check_date && new Date() > (problem.solution_check_date.toDate ? problem.solution_check_date.toDate() : new Date(problem.solution_check_date));
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const _myFeedback = problem[`${myRole}_post_mortem`];
     const [allowCritique, setAllowCritique] = useState(false);
