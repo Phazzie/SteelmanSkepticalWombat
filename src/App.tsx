@@ -1,6 +1,7 @@
 import React from 'react';
 import { AppProvider } from './context/AppContext';
 import { useAppContext } from './hooks/useAppContext';
+import ErrorBoundary from './components/ui/ErrorBoundary';
 import WombatAvatar from './components/ui/WombatAvatar';
 import ProgressBar from './components/ui/ProgressBar';
 import Notification from './components/ui/Notification';
@@ -19,9 +20,11 @@ import { WOMBAT_TROPHY_URL } from './constants';
 
 const App = () => {
     return (
-        <AppProvider>
-            <MainApp />
-        </AppProvider>
+        <ErrorBoundary>
+            <AppProvider>
+                <MainApp />
+            </AppProvider>
+        </ErrorBoundary>
     );
 };
 

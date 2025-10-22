@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, User } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, query, where } from 'firebase/firestore';
+import { sanitizeName } from '../utils/security';
 
 // The Firebase configuration is read from an environment variable.
 // See .env.example for more details.
@@ -33,11 +34,17 @@ export const createUserProfile = (uid: string) => {
 }
 
 export const updateUserName = (uid: string, newName: string) => {
-    if (uid && newName) {
-        const userDocRef = doc(db, `artifacts/${appId}/users/${uid}`);
-        const sanitizedName = newName.trim().substring(0, 50);
-        return updateDoc(userDocRef, { name: sanitizedName });
+    if (!uid || !newName) {
+        throw new Error('User ID and name are required');
     }
+    
+    const sanitized = sanitizeName(newName);
+    if (!sanitized) {
+        throw new Error('Invalid name format. Use only letters, numbers, spaces, hyphens, and apostrophes (max 50 characters)');
+    }
+    
+    const userDocRef = doc(db, `artifacts/${appId}/users/${uid}`);
+    return updateDoc(userDocRef, { name: sanitized });
 };
 
 export const onUserSnapshot = (uid: string, callback: (doc: any) => void) => {

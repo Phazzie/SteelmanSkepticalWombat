@@ -1,4 +1,8 @@
 import { Problem } from "../types";
+import { RateLimiter } from "../utils/security";
+
+// Rate limiter: 10 AI calls per minute to prevent abuse
+const aiRateLimiter = new RateLimiter(10, 60000);
 
 // Enhanced AI Service with LangChain integration
 // Fallback to basic implementation if LangChain is unavailable
@@ -72,9 +76,11 @@ const callGemini = async (prompt: string): Promise<string | null> => {
         return result?.candidates?.[0]?.content?.parts?.[0]?.text;
     } catch (error) {
         console.error("Gemini API Error:", error);
-        // In a production app, this should be handled more gracefully,
-        // perhaps with a user-facing notification system.
-        return null;
+        // In production, log to monitoring service
+        // logError('gemini_api_failure', { error, prompt: prompt.substring(0, 100) });
+        
+        // Return user-friendly error instead of null
+        throw new Error('The Wombat is temporarily unavailable. Please try again in a moment.');
     }
 };
 
@@ -86,7 +92,7 @@ const callGemini = async (prompt: string): Promise<string | null> => {
  */
 export const getTranslation = (text: string): Promise<string | null> => {
     const prompt = `You are The Skeptical Wombat. A user has submitted their private thoughts on an issue. Your job is to "translate" it, cutting through polite language to reveal the raw, underlying feeling or demand. Be blunt, insightful, and use your dry wit. Keep it to one or two sentences. Text: "${text}"`;
-    return callGemini(prompt);
+    return aiRateLimiter.throttle(() => callGemini(prompt));
 };
 
 /**
@@ -111,7 +117,7 @@ export const getAIAnalysis = (problem: Problem): Promise<string | null> => {
     - P1 Steelman of P2: "${problem.user1_steelman}"
     - P2 Steelman of P1: "${problem.user2_steelman}"
     **Begin Analysis:**`;
-    return callGemini(prompt);
+    return aiRateLimiter.throttle(() => callGemini(prompt));
 };
 
 /**
@@ -130,7 +136,7 @@ export const getWager = (problem: Problem, currentUserSteelman: string): Promise
         - **Solution B (from Partner 2):** "${problem.user2_proposed_solution}"
         - **Partner 1's understanding of Solution B:** "${currentUserSteelman}"
         **Wager:**`;
-    return callGemini(prompt);
+    return aiRateLimiter.throttle(() => callGemini(prompt));
 }
 
 /**
@@ -141,7 +147,7 @@ export const getWager = (problem: Problem, currentUserSteelman: string): Promise
  */
 export const getBSAnalysis = (text: string): Promise<string | null> => {
     const prompt = `You are the Skeptical Wombat's BS Meter. Analyze the following "steelman" argument. Is it a genuine attempt at understanding, or a passive-aggressive complaint disguised as empathy? Be brutally honest and provide a short, witty, and insightful analysis. Keep it to one or two sentences. Text: "${text}"`;
-    return callGemini(prompt);
+    return aiRateLimiter.throttle(() => callGemini(prompt));
 };
 
 /**
@@ -151,5 +157,5 @@ export const getBSAnalysis = (text: string): Promise<string | null> => {
  */
 export const getEmergencyWombat = (): Promise<string | null> => {
     const prompt = `You are the Emergency Wombat. A user has clicked the emergency button. Provide a piece of generic, witty, and slightly unhelpful advice. Keep it to one or two sentences.`;
-    return callGemini(prompt);
+    return aiRateLimiter.throttle(() => callGemini(prompt));
 }

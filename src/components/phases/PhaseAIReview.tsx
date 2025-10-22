@@ -1,5 +1,6 @@
 import React from 'react';
 import WombatAvatar from '../ui/WombatAvatar';
+import SafeText from '../ui/SafeText';
 import { WOMBAT_AVATAR_URL } from '../../constants';
 import { Problem } from '../../types';
 
@@ -33,16 +34,16 @@ const PhaseAIReview: React.FC<PhaseAIReviewProps> = ({ problem, onNext, onEscala
 
         {/* Display the human verdict if it exists. */}
         {problem.human_verdict && (
-            <div className="prose prose-invert text-left mt-4 p-4 bg-sky-900/50 border-2 border-dashed border-sky-400 rounded-lg whitespace-pre-wrap font-serif">
+            <div className="prose prose-invert text-left mt-4 p-4 bg-sky-900/50 border-2 border-dashed border-sky-400 rounded-lg font-serif">
                 <h4 className="font-bold text-sky-300">A Verdict from the Human Wombat:</h4>
-                {problem.human_verdict}
+                <SafeText content={problem.human_verdict} />
             </div>
         )}
 
         {/* Display the AI analysis if it exists and the AI is not currently loading. */}
         {problem.ai_analysis && !isAiLoading && (
-            <div className="prose prose-invert text-left mt-4 p-4 bg-gray-800/50 border border-gray-700 rounded-lg whitespace-pre-wrap font-serif">
-                {problem.ai_analysis}
+            <div className="prose prose-invert text-left mt-4 p-4 bg-gray-800/50 border border-gray-700 rounded-lg font-serif">
+                <SafeText content={problem.ai_analysis} />
             </div>
         )}
 
