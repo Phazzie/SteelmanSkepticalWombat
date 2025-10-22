@@ -62,6 +62,32 @@ const MainApp = () => {
         setShowInvite(true);
     };
 
+    // Close modal on Escape key
+    React.useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && showInvite) {
+                setShowInvite(false);
+            }
+        };
+        
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+    }, [showInvite]);
+
+    // Focus trap for modal
+    React.useEffect(() => {
+        if (showInvite) {
+            const modal = document.querySelector('[role="dialog"]');
+            if (modal) {
+                const focusableElements = modal.querySelectorAll<HTMLElement>(
+                    'button, input, [tabindex]:not([tabindex="-1"])'
+                );
+                const firstElement = focusableElements[0];
+                firstElement?.focus();
+            }
+        }
+    }, [showInvite]);
+
     const renderPhase = () => {
         if (!currentProblem) return (
              <div className="text-center p-8 sm:p-12 bg-gray-900 rounded-xl shadow-2xl flex flex-col items-center justify-center h-full border-2 border-dashed border-gray-700">
@@ -134,6 +160,10 @@ const MainApp = () => {
 
     return (
         <div className="min-h-screen bg-gray-800 font-sans text-gray-200 bg-gradient-to-br from-gray-800 to-gray-900">
+            <a href="#main-content" className="skip-to-content">
+                Skip to main content
+            </a>
+            
             <style>
                 {`
                     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Playfair+Display:wght@700&display=swap');
@@ -144,29 +174,66 @@ const MainApp = () => {
             <Notification notification={notification} onDismiss={() => setNotification({ ...notification, show: false })} />
 
             {showInvite && (
-                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-                    <div className="bg-gray-800 p-8 rounded-lg shadow-2xl border border-gray-700 text-center">
-                        <h2 className="text-2xl font-serif text-white mb-4">Invite Your Partner</h2>
+                <div 
+                    className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
+                    onClick={() => setShowInvite(false)}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="invite-modal-title"
+                >
+                    <div 
+                        className="bg-gray-800 p-8 rounded-lg shadow-2xl border border-gray-700 text-center"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <h2 id="invite-modal-title" className="text-2xl font-serif text-white mb-4">Invite Your Partner</h2>
                         <p className="text-gray-400 mb-4">Send this link to your partner to connect.</p>
-                        <input type="text" readOnly value={inviteLink} className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white"/>
-                        <button onClick={() => setShowInvite(false)} className="mt-4 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg">Close</button>
+                        <input 
+                            type="text" 
+                            readOnly 
+                            value={inviteLink} 
+                            className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white"
+                            aria-label="Invitation link"
+                        />
+                        <button 
+                            onClick={() => setShowInvite(false)} 
+                            className="mt-4 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg"
+                            aria-label="Close invitation modal"
+                        >
+                            Close
+                        </button>
                     </div>
                 </div>
             )}
 
-            <header className="bg-gray-900/50 backdrop-blur-sm shadow-lg sticky top-0 z-40 border-b border-white/10">
+            <header className="bg-gray-900/50 backdrop-blur-sm shadow-lg sticky top-0 z-40 border-b border-white/10" role="banner">
                 <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
                     <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center font-serif">
                         <WombatAvatar className="w-10 h-10 mr-3" />
                         Skeptical Wombat
                     </h1>
                     <div>
-                        {!user && isLoading && <div className="text-sm text-gray-400">Loading...</div>}
+                        {!user && isLoading && (
+                            <div className="text-sm text-gray-400" role="status" aria-live="polite">
+                                Loading...
+                            </div>
+                        )}
                         {user && !partner && (
-                            <button onClick={generateInviteLink} className="bg-lime-500 hover:bg-lime-600 text-gray-900 font-bold py-2 px-4 rounded-lg transition">Invite Partner</button>
+                            <button 
+                                onClick={generateInviteLink} 
+                                className="bg-lime-500 hover:bg-lime-600 text-gray-900 font-bold py-2 px-4 rounded-lg transition"
+                                aria-label="Generate invitation link for your partner"
+                            >
+                                Invite Partner
+                            </button>
                         )}
                         {user && partner && (
-                             <button onClick={handleEmergencyWombat} disabled={!!isAiLoading} className="bg-red-500/80 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-red-800 disabled:animate-pulse">
+                             <button 
+                                onClick={handleEmergencyWombat} 
+                                disabled={!!isAiLoading} 
+                                className="bg-red-500/80 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-red-800 disabled:animate-pulse"
+                                aria-label={isAiLoading === 'emergency' ? 'Wombat is thinking' : 'Get emergency advice from the Wombat'}
+                                aria-busy={isAiLoading === 'emergency'}
+                            >
                                 {isAiLoading === 'emergency' ? 'Thinking...' : 'Emergency Wombat'}
                             </button>
                         )}
@@ -174,7 +241,7 @@ const MainApp = () => {
                 </div>
             </header>
 
-            <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+            <main id="main-content" className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8" role="main">
                 {!partner ? (
                     <div className="text-center p-12 bg-gray-900 rounded-xl shadow-2xl relative overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent z-10"></div>
@@ -191,27 +258,90 @@ const MainApp = () => {
                            <div>
                                 <h3 className="font-bold text-lg text-white">Your Names</h3>
                                 <div className="space-y-2 mt-2">
-                                    <input type="text" placeholder="Your Name" defaultValue={user?.name} onBlur={(e) => updateUserName(e.target.value)} className="w-full p-2 bg-gray-800 border border-gray-600 rounded-md text-white"/>
-                                    <input type="text" placeholder="Partner's Name" value={partner?.name || ''} disabled className="w-full p-2 bg-gray-800 border border-gray-600 rounded-md text-gray-400"/>
+                                    <label htmlFor="user-name" className="sr-only">Your name</label>
+                                    <input 
+                                        id="user-name"
+                                        type="text" 
+                                        placeholder="Your Name" 
+                                        defaultValue={user?.name} 
+                                        onBlur={(e) => updateUserName(e.target.value)} 
+                                        className="w-full p-2 bg-gray-800 border border-gray-600 rounded-md text-white"
+                                        aria-label="Your name"
+                                    />
+                                    <label htmlFor="partner-name" className="sr-only">Partner's name</label>
+                                    <input 
+                                        id="partner-name"
+                                        type="text" 
+                                        placeholder="Partner's Name" 
+                                        value={partner?.name || ''} 
+                                        disabled 
+                                        className="w-full p-2 bg-gray-800 border border-gray-600 rounded-md text-gray-400"
+                                        aria-label="Partner's name (read-only)"
+                                    />
                                 </div>
                            </div>
                            <hr className="border-gray-700"/>
                             <div>
-                                <div className="flex border-b border-gray-700 mb-4">
-                                    <button onClick={() => setActiveTab('active')} className={`py-2 px-4 font-bold ${activeTab === 'active' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'}`}>Active Dramas</button>
-                                    <button onClick={() => setActiveTab('trophy')} className={`py-2 px-4 font-bold ${activeTab === 'trophy' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'}`}>Trophy Room</button>
+                                <div className="flex border-b border-gray-700 mb-4" role="tablist" aria-label="Problem categories">
+                                    <button 
+                                        onClick={() => setActiveTab('active')} 
+                                        className={`py-2 px-4 font-bold ${activeTab === 'active' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'}`}
+                                        role="tab"
+                                        aria-selected={activeTab === 'active'}
+                                        aria-controls="active-problems-panel"
+                                    >
+                                        Active Dramas
+                                    </button>
+                                    <button 
+                                        onClick={() => setActiveTab('trophy')} 
+                                        className={`py-2 px-4 font-bold ${activeTab === 'trophy' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'}`}
+                                        role="tab"
+                                        aria-selected={activeTab === 'trophy'}
+                                        aria-controls="trophy-room-panel"
+                                    >
+                                        Trophy Room
+                                    </button>
                                 </div>
-                                <button onClick={startNewProblem} className="w-full bg-lime-500 hover:bg-lime-600 text-gray-900 font-bold py-2 px-4 rounded-lg mb-4 transition">+ New Problem</button>
-                                <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                                <button 
+                                    onClick={startNewProblem} 
+                                    className="w-full bg-lime-500 hover:bg-lime-600 text-gray-900 font-bold py-2 px-4 rounded-lg mb-4 transition"
+                                    aria-label="Start a new problem"
+                                >
+                                    + New Problem
+                                </button>
+                                <div 
+                                    className="space-y-2 max-h-[60vh] overflow-y-auto"
+                                    role="tabpanel"
+                                    id={activeTab === 'active' ? 'active-problems-panel' : 'trophy-room-panel'}
+                                    aria-label={activeTab === 'active' ? 'Active problems list' : 'Resolved problems list'}
+                                >
                                     {problems.filter(p => activeTab === 'active' ? p.status !== 'resolved' : p.status === 'resolved').map(p => (
-                                        <div key={p.id} onClick={() => setCurrentProblem(p)} className={`p-4 rounded-lg cursor-pointer transition ${currentProblem?.id === p.id ? 'bg-lime-900/50 ring-2 ring-lime-400' : 'bg-gray-800 hover:bg-gray-700'}`}>
+                                        <div 
+                                            key={p.id} 
+                                            onClick={() => setCurrentProblem(p)} 
+                                            className={`p-4 rounded-lg cursor-pointer transition ${currentProblem?.id === p.id ? 'bg-lime-900/50 ring-2 ring-lime-400' : 'bg-gray-800 hover:bg-gray-700'}`}
+                                            role="button"
+                                            tabIndex={0}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault();
+                                                    setCurrentProblem(p);
+                                                }
+                                            }}
+                                            aria-label={`Problem: ${p.problem_statement || `from ${new Date(p.createdAt.seconds * 1000).toLocaleDateString()}`}, Status: ${p.status.replace(/_/g, ' ')}`}
+                                            aria-current={currentProblem?.id === p.id ? 'true' : undefined}
+                                        >
                                             <p className="font-semibold truncate text-white">{p.problem_statement || `Problem from ${new Date(p.createdAt.seconds * 1000).toLocaleDateString()}`}</p>
                                             <span className={`text-xs font-medium px-2 py-1 rounded-full ${ p.status === 'resolved' ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'}`}>{p.status.replace(/_/g, ' ')}</span>
                                         </div>
                                     ))}
                                     {activeTab === 'trophy' && problems.filter(p=>p.status === 'resolved').length === 0 &&
-                                        <div className="text-center p-8 text-gray-500">
-                                            <img src={WOMBAT_TROPHY_URL} className="w-32 h-32 mx-auto rounded-full opacity-30" />
+                                        <div className="text-center p-8 text-gray-500" role="status">
+                                            <img 
+                                                src={WOMBAT_TROPHY_URL} 
+                                                className="w-32 h-32 mx-auto rounded-full opacity-30" 
+                                                alt="Empty trophy room"
+                                            />
                                             <p className="mt-4 font-serif">The Trophy Room is depressingly empty.</p>
                                             <p className="text-sm">Try solving a problem first.</p>
                                         </div>
