@@ -25,5 +25,10 @@ export default defineConfig({
     // For backwards compatibility with app.ts
     '__firebase_config': '"undefined"',
     '__app_id': '"steelman-wombat"'
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test-setup.ts',
   }
 })
