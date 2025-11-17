@@ -69,7 +69,31 @@ const callGemini = async (prompt: string): Promise<string | null> => {
 
         const result = await response.json();
         // Navigates the nested response object to extract the core text content.
-        return result?.candidates?.[0]?.content?.parts?.[0]?.text;
+        const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        // Validate response structure
+        if (!result) {
+            console.error("Gemini API returned null or undefined result");
+            return null;
+        }
+        if (!result.candidates || !Array.isArray(result.candidates) || result.candidates.length === 0) {
+            console.error("Gemini API response missing candidates array:", JSON.stringify(result, null, 2));
+            return null;
+        }
+        if (!result.candidates[0].content) {
+            console.error("Gemini API response missing content in candidate:", JSON.stringify(result.candidates[0], null, 2));
+            return null;
+        }
+        if (!result.candidates[0].content.parts || !Array.isArray(result.candidates[0].content.parts) || result.candidates[0].content.parts.length === 0) {
+            console.error("Gemini API response missing parts array:", JSON.stringify(result.candidates[0].content, null, 2));
+            return null;
+        }
+        if (typeof text !== 'string') {
+            console.error("Gemini API response text is not a string:", typeof text, text);
+            return null;
+        }
+
+        return text;
     } catch (error) {
         console.error("Gemini API Error:", error);
         // In a production app, this should be handled more gracefully,

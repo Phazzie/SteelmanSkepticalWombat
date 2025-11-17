@@ -1,0 +1,65 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Testing
+tests
+__tests__
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+coverage
+.nyc_output
+
+# Documentation
+docs
+*.md
+README.md
+CHANGELOG.md
+LICENSE
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env*.local
+
+# Build artifacts
+dist
+build
+.cache
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+circle.yml
+
+# Misc
+.editorconfig
+.prettierrc
+.prettierignore
+.eslintrc.json
+.eslintignore
+tsconfig.json
+vite.config.ts
+vitest.config.ts

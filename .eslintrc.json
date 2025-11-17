@@ -24,5 +24,13 @@
       { "argsIgnorePattern": "^_" }
     ],
     "no-unused-vars": "off"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx"],
+      "env": {
+        "node": true
+      }
+    }
+  ]
 }

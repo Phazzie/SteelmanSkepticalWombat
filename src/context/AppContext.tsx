@@ -14,30 +14,31 @@ import {
     getDoc,
 } from '../services/firebase';
 import { getTranslation, getAIAnalysis as getWombatAnalysis, getWager, getBSAnalysis, getEmergencyWombat } from '../services/ai';
+import { User, Partner, Problem, Notification } from '../types';
 
 interface AppContextType {
-    user: any;
-    partner: any;
-    problems: any[];
-    currentProblem: any;
+    user: User | null;
+    partner: Partner | null;
+    problems: Problem[];
+    currentProblem: Problem | null;
     isLoading: boolean;
-    isAiLoading: any;
-    notification: any;
-    setNotification: (notification: any) => void;
+    isAiLoading: string | null;
+    notification: Notification;
+    setNotification: (notification: Notification) => void;
     signIn: () => void;
     signInWithToken: (token: string) => void;
     invitePartner: (inviteeId: string) => void;
     updateUserName: (newName: string) => void;
     createProblem: () => void;
     setCurrentProblemById: (id: string) => void;
-    handleUpdate: (problemId: string, data: any) => void;
+    handleUpdate: (problemId: string, data: Partial<Problem>) => void;
     handleSteelmanSubmit: (text: string) => void;
     handleSteelmanApproval: () => void;
     handleSolutionSteelmanSubmit: (text: string) => void;
     handleMemento: () => void;
     handleEmergencyWombat: () => void;
     startNewProblem: () => void;
-    setCurrentProblem: (problem: any) => void;
+    setCurrentProblem: (problem: Problem | null) => void;
     handleAgreement: (type: string) => void;
     handlePrivateSubmit: (text: string) => void;
     handleProposeSolution: (text: string) => void;
@@ -47,51 +48,108 @@ interface AppContextType {
 export const AppContext = createContext<AppContextType | null>(null);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-    const [user, setUser] = useState(null);
-    const [partner, setPartner] = useState(null);
-    const [problems, setProblems] = useState([]);
-    const [currentProblem, setCurrentProblem] = useState(null);
+    const [user, setUser] = useState<User | null>(null);
+    const [partner, setPartner] = useState<Partner | null>(null);
+    const [problems, setProblems] = useState<Problem[]>([]);
+    const [currentProblem, setCurrentProblem] = useState<Problem | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [isAiLoading, setIsAiLoading] = useState(null);
-    const [notification, setNotification] = useState({ show: false, message: '', type: 'info', duration: 4000 });
+    const [isAiLoading, setIsAiLoading] = useState<string | null>(null);
+    const [notification, setNotification] = useState<Notification>({ show: false, message: '', type: 'info', duration: 4000 });
 
     const getAIAnalysis = useCallback(async (problem) => {
-        setIsAiLoading('verdict');
-        const analysisText = await getWombatAnalysis(problem);
-        if (analysisText) {
-            await updateProblem(problem.id, { ai_analysis: analysisText, status: 'propose_solutions' });
+        try {
+            setIsAiLoading('verdict');
+            const analysisText = await getWombatAnalysis(problem);
+            if (analysisText) {
+                await updateProblem(problem.id, { ai_analysis: analysisText, status: 'propose_solutions' });
+            }
+        } catch (error) {
+            console.error('Error getting AI analysis:', error);
+            setNotification({
+                show: true,
+                message: 'Failed to get AI analysis. Please try again.',
+                type: 'error',
+                duration: 4000
+            });
+        } finally {
+            setIsAiLoading(null);
         }
-        setIsAiLoading(null);
     }, []);
 
     useEffect(() => {
         const unsubscribe = onAuthChange(async (currentUser) => {
             if (currentUser) {
                 onUserSnapshot(currentUser.uid, async (snap) => {
-                    if (snap.exists()) {
-                        const userData = snap.data();
-                        setUser({ uid: currentUser.uid, ...userData });
-                        if (userData.partnerId) {
-                            onPartnerSnapshot(userData.partnerId, (partnerSnap) => {
-                                if (partnerSnap.exists()) {
-                                    setPartner({ uid: userData.partnerId, ...partnerSnap.data() });
-                                } else {
-                                    setPartner(null);
-                                }
-                            });
+                    try {
+                        if (snap.exists()) {
+                            const userData = snap.data();
+                            if (!userData) {
+                                console.error("User data is null for uid:", currentUser.uid);
+                                return;
+                            }
+                            setUser({ uid: currentUser.uid, ...userData } as User);
+                            if (userData.partnerId) {
+                                onPartnerSnapshot(userData.partnerId, (partnerSnap) => {
+                                    try {
+                                        if (partnerSnap.exists()) {
+                                            const partnerData = partnerSnap.data();
+                                            if (partnerData) {
+                                                setPartner({ uid: userData.partnerId, ...partnerData } as Partner);
+                                            } else {
+                                                console.error("Partner data is null for partnerId:", userData.partnerId);
+                                                setPartner(null);
+                                            }
+                                        } else {
+                                            setPartner(null);
+                                        }
+                                    } catch (error) {
+                                        console.error('Error in partner snapshot:', error);
+                                        setNotification({
+                                            show: true,
+                                            message: 'Failed to load partner data.',
+                                            type: 'error',
+                                            duration: 4000
+                                        });
+                                    }
+                                }, (error) => {
+                                    console.error('Partner snapshot listener error:', error);
+                                    setNotification({
+                                        show: true,
+                                        message: 'Lost connection to partner data.',
+                                        type: 'error',
+                                        duration: 4000
+                                    });
+                                });
+                            } else {
+                                setPartner(null);
+                            }
                         } else {
-                            setPartner(null);
+                            const urlParams = new URLSearchParams(window.location.search);
+                            const inviterId = urlParams.get('invite');
+                            if (inviterId && inviterId !== currentUser.uid) {
+                                await linkPartners(inviterId, currentUser.uid);
+                                window.history.replaceState({}, document.title, window.location.pathname);
+                            } else {
+                                await createUserProfile(currentUser.uid);
+                            }
                         }
-                    } else {
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const inviterId = urlParams.get('invite');
-                        if (inviterId && inviterId !== currentUser.uid) {
-                            await linkPartners(inviterId, currentUser.uid);
-                            window.history.replaceState({}, document.title, window.location.pathname);
-                        } else {
-                            await createUserProfile(currentUser.uid);
-                        }
+                    } catch (error) {
+                        console.error('Error in user snapshot:', error);
+                        setNotification({
+                            show: true,
+                            message: 'Failed to load user data.',
+                            type: 'error',
+                            duration: 4000
+                        });
                     }
+                }, (error) => {
+                    console.error('User snapshot listener error:', error);
+                    setNotification({
+                        show: true,
+                        message: 'Lost connection to user data. Please refresh.',
+                        type: 'error',
+                        duration: 4000
+                    });
                 });
             } else {
                 try {
@@ -114,7 +172,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         if (!user?.uid) return;
         const unsubscribe = onProblemsSnapshot(user.uid, (querySnapshot) => {
-            const fetchedProblems = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+            const fetchedProblems = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Problem)).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
             setProblems(fetchedProblems);
             if (currentProblem) {
                 const updatedCurrent = fetchedProblems.find(p => p.id === currentProblem.id);
@@ -164,18 +222,29 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     const handlePrivateSubmit = async (text) => {
         if (!currentProblem || !user) return;
-        setIsAiLoading('translation');
-        const myRole = currentProblem.roles[user.uid];
-        const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
-        const translationResult = await getTranslation(text);
-        const updates = {
-            [`${myRole}_private_version`]: text,
-            [`${myRole}_submitted_private`]: true,
-            [`${myRole}_translation`]: translationResult || "Translation failed.",
-        };
-        if (currentProblem[`${partnerRole}_submitted_private`]) updates.status = 'translation';
-        handleUpdate(currentProblem.id, updates);
-        setIsAiLoading(null);
+        try {
+            setIsAiLoading('translation');
+            const myRole = currentProblem.roles[user.uid];
+            const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
+            const translationResult = await getTranslation(text);
+            const updates = {
+                [`${myRole}_private_version`]: text,
+                [`${myRole}_submitted_private`]: true,
+                [`${myRole}_translation`]: translationResult || "Translation failed.",
+            };
+            if (currentProblem[`${partnerRole}_submitted_private`]) updates.status = 'translation';
+            handleUpdate(currentProblem.id, updates);
+        } catch (error) {
+            console.error('Error submitting private version:', error);
+            setNotification({
+                show: true,
+                message: 'Failed to submit private version. Please try again.',
+                type: 'error',
+                duration: 4000
+            });
+        } finally {
+            setIsAiLoading(null);
+        }
     };
 
     const handleSteelmanSubmit = (text) => {
@@ -202,21 +271,32 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     const handleSolutionSteelmanSubmit = async (text) => {
         if (!currentProblem || !user) return;
-        const myRole = currentProblem.roles[user.uid];
-        const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
-        const updates = { [`${myRole}_solution_steelman`]: text };
+        try {
+            const myRole = currentProblem.roles[user.uid];
+            const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
+            const updates = { [`${myRole}_solution_steelman`]: text };
 
-        if (currentProblem[`${partnerRole}_solution_steelman`]) {
-            setIsAiLoading('wager');
-            const wagerResult = await getWager(currentProblem, text);
-            if(wagerResult) {
-                updates.wombats_wager = wagerResult;
-                updates.status = 'wager';
+            if (currentProblem[`${partnerRole}_solution_steelman`]) {
+                setIsAiLoading('wager');
+                const wagerResult = await getWager(currentProblem, text);
+                if(wagerResult) {
+                    updates.wombats_wager = wagerResult;
+                    updates.status = 'wager';
+                    await handleUpdate(currentProblem.id, updates);
+                }
+            } else {
                 await handleUpdate(currentProblem.id, updates);
             }
+        } catch (error) {
+            console.error('Error submitting solution steelman:', error);
+            setNotification({
+                show: true,
+                message: 'Failed to submit solution steelman. Please try again.',
+                type: 'error',
+                duration: 4000
+            });
+        } finally {
             setIsAiLoading(null);
-        } else {
-            await handleUpdate(currentProblem.id, updates);
         }
     };
 
@@ -235,9 +315,26 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         createProblem: () => {},
         setCurrentProblemById: (_id: string) => {},
         startNewProblem: async () => {
-            const docRef = await createNewProblem(user, partner);
-            const newProblem = { id: docRef.id, ...(await getDoc(docRef)).data() };
-            setCurrentProblem(newProblem)
+            try {
+                const docRef = await createNewProblem(user, partner);
+                const docSnap = await getDoc(docRef);
+                const problemData = docSnap.data();
+                if (!problemData) {
+                    console.error("Failed to retrieve problem data after creation");
+                    setNotification({ show: true, message: "Failed to create problem. Please try again.", type: 'warning', duration: 4000 });
+                    return;
+                }
+                const newProblem = { id: docRef.id, ...problemData } as Problem;
+                setCurrentProblem(newProblem)
+            } catch (error) {
+                console.error('Error starting new problem:', error);
+                setNotification({
+                    show: true,
+                    message: 'Failed to create new problem. Please try again.',
+                    type: 'error',
+                    duration: 4000
+                });
+            }
         },
         setCurrentProblem,
         updateUserName: (newName) => updateUserNameInDb(user.uid, newName),
@@ -249,20 +346,42 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         handleProposeSolution,
         handleSolutionSteelmanSubmit,
         handleBSMeter: async (text) => {
-            setIsAiLoading('bs-meter');
-            const result = await getBSAnalysis(text);
-            setNotification({ show: true, message: result || "The Wombat is speechless.", type: 'info', duration: 4000 });
-            setIsAiLoading(null);
+            try {
+                setIsAiLoading('bs-meter');
+                const result = await getBSAnalysis(text);
+                setNotification({ show: true, message: result || "The Wombat is speechless.", type: 'info', duration: 4000 });
+            } catch (error) {
+                console.error('Error getting BS analysis:', error);
+                setNotification({
+                    show: true,
+                    message: 'Failed to get BS meter analysis. Please try again.',
+                    type: 'error',
+                    duration: 4000
+                });
+            } finally {
+                setIsAiLoading(null);
+            }
         },
         handleMemento: async () => {
             // Placeholder for memento functionality
             setNotification({ show: true, message: "Memento feature coming soon!", type: 'info', duration: 4000 });
         },
         handleEmergencyWombat: async () => {
-            setIsAiLoading('emergency');
-            const result = await getEmergencyWombat();
-            setNotification({ show: true, message: result || "The Wombat is on a coffee break.", type: 'info', duration: 4000 });
-            setIsAiLoading(null);
+            try {
+                setIsAiLoading('emergency');
+                const result = await getEmergencyWombat();
+                setNotification({ show: true, message: result || "The Wombat is on a coffee break.", type: 'info', duration: 4000 });
+            } catch (error) {
+                console.error('Error calling emergency wombat:', error);
+                setNotification({
+                    show: true,
+                    message: 'Failed to summon Emergency Wombat. Please try again.',
+                    type: 'error',
+                    duration: 4000
+                });
+            } finally {
+                setIsAiLoading(null);
+            }
         },
     };
 

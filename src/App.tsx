@@ -15,13 +15,16 @@ import PhaseSolutionSteelman from './components/phases/PhaseSolutionSteelman';
 import PhaseWager from './components/phases/PhaseWager';
 import PhaseSolution from './components/phases/PhaseSolution';
 import PhaseResolved from './components/phases/PhaseResolved';
+import ErrorBoundary from './components/ErrorBoundary';
 import { WOMBAT_TROPHY_URL } from './constants';
 
 const App = () => {
     return (
-        <AppProvider>
-            <MainApp />
-        </AppProvider>
+        <ErrorBoundary>
+            <AppProvider>
+                <MainApp />
+            </AppProvider>
+        </ErrorBoundary>
     );
 };
 
@@ -202,7 +205,7 @@ const MainApp = () => {
                                 <div className="space-y-2 max-h-[60vh] overflow-y-auto">
                                     {problems.filter(p => activeTab === 'active' ? p.status !== 'resolved' : p.status === 'resolved').map(p => (
                                         <div key={p.id} onClick={() => setCurrentProblem(p)} className={`p-4 rounded-lg cursor-pointer transition ${currentProblem?.id === p.id ? 'bg-lime-900/50 ring-2 ring-lime-400' : 'bg-gray-800 hover:bg-gray-700'}`}>
-                                            <p className="font-semibold truncate text-white">{p.problem_statement || `Problem from ${new Date(p.createdAt.seconds * 1000).toLocaleDateString()}`}</p>
+                                            <p className="font-semibold truncate text-white">{p.problem_statement || `Problem from ${p.createdAt?.seconds ? new Date(p.createdAt.seconds * 1000).toLocaleDateString() : 'Unknown Date'}`}</p>
                                             <span className={`text-xs font-medium px-2 py-1 rounded-full ${ p.status === 'resolved' ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'}`}>{p.status.replace(/_/g, ' ')}</span>
                                         </div>
                                     ))}
