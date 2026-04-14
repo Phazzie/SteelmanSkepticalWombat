@@ -9,6 +9,16 @@ export interface FirestoreTimestamp {
 }
 
 /**
+ * Safely converts a FirestoreTimestamp or plain Date to a JavaScript Date object.
+ */
+export const toJsDate = (value: FirestoreTimestamp | Date): Date => {
+    if (typeof (value as FirestoreTimestamp).toDate === 'function') {
+        return (value as FirestoreTimestamp).toDate();
+    }
+    return value as Date;
+};
+
+/**
  * Defines the core data structure for a "problem" being worked on by the users.
  * This interface is used throughout the application to ensure type consistency.
  */

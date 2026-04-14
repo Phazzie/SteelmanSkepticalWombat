@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { WOMBAT_TROPHY_URL } from '../../constants';
-import { Problem } from '../../types';
+import { Problem, toJsDate } from '../../types';
 
 interface PhaseResolvedProps {
     problem: Problem;
@@ -24,13 +24,7 @@ const PhaseResolved: React.FC<PhaseResolvedProps> = ({
 }) => {
     const isPostMortemTime =
         problem.solution_check_date != null &&
-        (() => {
-            const ts = problem.solution_check_date;
-            const d = ts && typeof (ts as { toDate?: () => Date }).toDate === 'function'
-                ? (ts as { toDate: () => Date }).toDate()
-                : (ts as Date);
-            return new Date() > d;
-        })();
+        new Date() > toJsDate(problem.solution_check_date);
 
     const myFeedback = problem[`${myRole}_post_mortem`];
     const [allowCritique, setAllowCritique] = useState(false);
