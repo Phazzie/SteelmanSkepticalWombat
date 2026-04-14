@@ -13,7 +13,16 @@ import {
     updateProblem,
     getDoc,
 } from '../services/firebase';
-import { getTranslation, getAIAnalysis as getWombatAnalysis, getWager, getBSAnalysis, getEmergencyWombat } from '../services/ai';
+import {
+    getTranslation,
+    getAIAnalysis as getWombatAnalysis,
+    getWager,
+    getBSAnalysis,
+    getEmergencyWombat,
+    getBrainstorm,
+    getCritique,
+} from '../services/ai';
+import { Problem } from '../types';
 
 interface AppContextType {
     user: any;
@@ -36,6 +45,9 @@ interface AppContextType {
     handleSolutionSteelmanSubmit: (text: string) => void;
     handleMemento: () => void;
     handleEmergencyWombat: () => void;
+    handleBrainstorm: () => void;
+    handleCritique: (problem: Problem) => void;
+    handleGenerateImage: () => void;
     startNewProblem: () => void;
     setCurrentProblem: (problem: any) => void;
     handleAgreement: (type: string) => void;
@@ -220,6 +232,38 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
+    const handleBrainstorm = async () => {
+        if (!currentProblem) return;
+        setIsAiLoading('brainstorm');
+        const result = await getBrainstorm(currentProblem);
+        if (result) {
+            await updateProblem(currentProblem.id, { brainstormed_solutions: result });
+        } else {
+            setNotification({ show: true, message: "The Wombat's brainstorming circuit is jammed. Try again.", type: 'warning', duration: 4000 });
+        }
+        setIsAiLoading(null);
+    };
+
+    const handleCritique = async (problem: Problem) => {
+        setIsAiLoading('critique');
+        const result = await getCritique(problem);
+        if (result) {
+            setNotification({ show: true, message: result, type: 'info', duration: 8000 });
+        } else {
+            setNotification({ show: true, message: "The Wombat refused to critique itself. Typical.", type: 'warning', duration: 4000 });
+        }
+        setIsAiLoading(null);
+    };
+
+    const handleGenerateImage = () => {
+        setNotification({
+            show: true,
+            message: "AI image generation requires a separate image API key (not yet configured). Coming soon.",
+            type: 'info',
+            duration: 5000,
+        });
+    };
+
     const value = {
         user,
         partner,
@@ -248,6 +292,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         handleSteelmanSubmit,
         handleProposeSolution,
         handleSolutionSteelmanSubmit,
+        handleBrainstorm,
+        handleCritique,
+        handleGenerateImage,
         handleBSMeter: async (text) => {
             setIsAiLoading('bs-meter');
             const result = await getBSAnalysis(text);
@@ -255,7 +302,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             setIsAiLoading(null);
         },
         handleMemento: async () => {
-            // Placeholder for memento functionality
             setNotification({ show: true, message: "Memento feature coming soon!", type: 'info', duration: 4000 });
         },
         handleEmergencyWombat: async () => {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import DraftTextarea from '../ui/DraftTextarea';
 
 /** Renders UI for the new Phase 8: Steelmanning the partner's proposed solution. */
@@ -7,6 +7,12 @@ const PhaseSolutionSteelman = ({ problem, onSave, onSubmit, myRole, partnerName 
     const partnerSolution = problem[`${partnerRole}_proposed_solution`];
     const iHaveSubmitted = !!problem[`${myRole}_solution_steelman`];
     const partnerHasSubmitted = !!problem[`${partnerRole}_solution_steelman`];
+
+    const [draftText, setDraftText] = useState(problem[`${myRole}_solution_steelman`] || '');
+
+    useEffect(() => {
+        setDraftText(problem[`${myRole}_solution_steelman`] || '');
+    }, [problem, myRole]);
 
     return (
         <div>
@@ -17,8 +23,8 @@ const PhaseSolutionSteelman = ({ problem, onSave, onSubmit, myRole, partnerName 
                 <p className="text-gray-200 whitespace-pre-wrap">{partnerSolution || "Waiting for partner..."}</p>
             </div>
             <DraftTextarea
-                value={problem[`${myRole}_solution_steelman`] || ''}
-                onChange={() => {}} // No-op since we save on blur
+                value={draftText}
+                onChange={(e) => setDraftText(e.target.value)}
                 onSave={(text) => onSave(problem.id, { [`${myRole}_solution_steelman`]: text })}
                 onSubmit={onSubmit}
                 placeholder={`I understand ${partnerName}'s solution to mean...`}

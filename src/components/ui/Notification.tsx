@@ -18,11 +18,17 @@ const Notification = ({ notification, onDismiss }) => {
 
     if (!notification.show) return null;
 
-    const baseStyle = "fixed top-24 right-5 p-4 rounded-lg shadow-2xl text-white z-50 flex items-center max-w-sm border border-white/20 bg-gray-800/80 backdrop-blur-sm";
+    const baseStyle = "fixed top-24 right-5 p-4 rounded-lg shadow-2xl text-white z-50 flex items-center max-w-sm border border-white/20 bg-gray-800/80 backdrop-blur-sm cursor-pointer";
 
     return (
-        <div className={baseStyle} onClick={onDismiss}>
-            <img src={WOMBAT_THINKING_URL} alt="Wombat" className="w-12 h-12 rounded-full mr-4 border-2 border-white/50"/>
+        <div
+            className={baseStyle}
+            onClick={onDismiss}
+            role="alert"
+            aria-live="assertive"
+            aria-atomic="true"
+        >
+            <img src={WOMBAT_THINKING_URL} alt="" className="w-12 h-12 rounded-full mr-4 border-2 border-white/50" aria-hidden="true"/>
             <p className="text-sm font-semibold">{notification.message}</p>
         </div>
     );

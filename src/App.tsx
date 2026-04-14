@@ -4,6 +4,7 @@ import { useAppContext } from './hooks/useAppContext';
 import WombatAvatar from './components/ui/WombatAvatar';
 import ProgressBar from './components/ui/ProgressBar';
 import Notification from './components/ui/Notification';
+import ErrorBoundary from './components/ui/ErrorBoundary';
 import PhaseAgreeStatement from './components/phases/PhaseAgreeStatement';
 import PhasePrivateVersion from './components/phases/PhasePrivateVersion';
 import PhaseTranslation from './components/phases/PhaseTranslation';
@@ -45,6 +46,9 @@ const MainApp = () => {
         handlePrivateSubmit,
         handleProposeSolution,
         handleSolutionSteelmanSubmit,
+        handleBrainstorm,
+        handleCritique,
+        handleGenerateImage,
         handleEmergencyWombat,
     } = useAppContext();
 
@@ -112,10 +116,10 @@ const MainApp = () => {
                  phaseComponent = <PhaseWager problem={currentProblem} onNext={() => handleUpdate(currentProblem.id, {status: 'solution'})} isAiLoading={isAiLoading} />;
                 break;
             case 'solution':
-                phaseComponent = <PhaseSolution problem={currentProblem} onUpdate={handleUpdate} onAgree={handleAgreement} onBrainstorm={() => {}} myRole={myRole} isAiLoading={isAiLoading} />;
+                phaseComponent = <PhaseSolution problem={currentProblem} onUpdate={handleUpdate} onAgree={handleAgreement} onBrainstorm={handleBrainstorm} myRole={myRole} isAiLoading={isAiLoading} />;
                 break;
             case 'resolved':
-                phaseComponent = <PhaseResolved problem={currentProblem} onUpdate={handleUpdate} myRole={myRole} onGenerateImage={() => {}} isAiLoading={isAiLoading} mementoImage={null} onCritique={() => {}} />;
+                phaseComponent = <PhaseResolved problem={currentProblem} onUpdate={handleUpdate} myRole={myRole} onGenerateImage={handleGenerateImage} isAiLoading={isAiLoading} mementoImage={null} onCritique={handleCritique} />;
                 break;
             default:
                 phaseComponent = <p>Unknown phase. The Wombat is confused.</p>;
@@ -124,20 +128,15 @@ const MainApp = () => {
         return (
             <div className="bg-gray-900 p-4 sm:p-6 rounded-xl shadow-2xl border border-gray-700">
                 <ProgressBar status={currentProblem.status} />
-                {phaseComponent}
+                <ErrorBoundary section={currentProblem.status}>
+                    {phaseComponent}
+                </ErrorBoundary>
             </div>
         );
     }
 
     return (
         <div className="min-h-screen bg-gray-800 font-sans text-gray-200 bg-gradient-to-br from-gray-800 to-gray-900">
-            <style>
-                {`
-                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Playfair+Display:wght@700&display=swap');
-                    .font-serif { font-family: 'Playfair Display', serif; }
-                    .font-sans { font-family: 'Inter', sans-serif; }
-                `}
-            </style>
             <Notification notification={notification} onDismiss={() => setNotification({ ...notification, show: false })} />
 
             {showInvite && (
