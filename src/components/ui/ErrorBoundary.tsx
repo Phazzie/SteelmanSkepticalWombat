@@ -22,7 +22,10 @@ class ErrorBoundary extends Component<Props, State> {
     }
 
     static getDerivedStateFromError(error: Error): State {
-        return { hasError: true, errorMessage: error?.message ?? 'Unknown error' };
+        return {
+            hasError: true,
+            errorMessage: error.message || 'An unexpected error occurred with no details available.',
+        };
     }
 
     componentDidCatch(error: Error, info: React.ErrorInfo) {
@@ -46,7 +49,7 @@ class ErrorBoundary extends Component<Props, State> {
                             ? `The "${this.props.section}" section crashed.`
                             : 'Something went wrong in this section.'}
                     </p>
-                    <p className="text-xs text-gray-600 font-mono break-all">{this.state.errorMessage}</p>
+                    <p className="text-xs text-gray-300 font-mono break-all">{this.state.errorMessage}</p>
                     <button
                         onClick={this.handleReset}
                         className="mt-4 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition"

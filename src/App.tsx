@@ -17,7 +17,7 @@ import PhaseWager from './components/phases/PhaseWager';
 import PhaseSolution from './components/phases/PhaseSolution';
 import PhaseResolved from './components/phases/PhaseResolved';
 import { WOMBAT_TROPHY_URL } from './constants';
-import { toJsDate } from './types';
+import { FirestoreTimestamp, toJsDate } from './types';
 
 const App = () => {
     return (
@@ -63,6 +63,11 @@ const MainApp = () => {
         const link = `${window.location.origin}${window.location.pathname}?invite=${user.uid}`;
         setInviteLink(link);
         setShowInvite(true);
+    };
+
+    const getProblemDateLabel = (problem: { createdAt?: FirestoreTimestamp | Date }) => {
+        if (!problem.createdAt) return 'unknown date';
+        return toJsDate(problem.createdAt).toLocaleDateString();
     };
 
     const renderPhase = () => {
@@ -204,7 +209,7 @@ const MainApp = () => {
                                     {problems.filter(p => activeTab === 'active' ? p.status !== 'resolved' : p.status === 'resolved').map(p => (
                                         <div key={p.id} onClick={() => setCurrentProblem(p)} className={`p-4 rounded-lg cursor-pointer transition ${currentProblem?.id === p.id ? 'bg-lime-900/50 ring-2 ring-lime-400' : 'bg-gray-800 hover:bg-gray-700'}`}>
                                             <p className="font-semibold truncate text-white">
-                                                {p.problem_statement || `Problem from ${p.createdAt ? toJsDate(p.createdAt).toLocaleDateString() : 'unknown date'}`}
+                                                {p.problem_statement || `Problem from ${getProblemDateLabel(p)}`}
                                             </p>
                                             <span className={`text-xs font-medium px-2 py-1 rounded-full ${ p.status === 'resolved' ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'}`}>{p.status.replace(/_/g, ' ')}</span>
                                         </div>

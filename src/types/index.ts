@@ -11,11 +11,22 @@ export interface FirestoreTimestamp {
 /**
  * Safely converts a FirestoreTimestamp or plain Date to a JavaScript Date object.
  */
+const isFirestoreTimestamp = (value: unknown): value is FirestoreTimestamp => {
+    return (
+        typeof value === 'object' &&
+        value !== null &&
+        'toDate' in value &&
+        typeof (value as FirestoreTimestamp).toDate === 'function' &&
+        'seconds' in value &&
+        'nanoseconds' in value
+    );
+};
+
 export const toJsDate = (value: FirestoreTimestamp | Date): Date => {
-    if (typeof (value as FirestoreTimestamp).toDate === 'function') {
-        return (value as FirestoreTimestamp).toDate();
+    if (isFirestoreTimestamp(value)) {
+        return value.toDate();
     }
-    return value as Date;
+    return value;
 };
 
 /**
