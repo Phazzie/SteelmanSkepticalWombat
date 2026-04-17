@@ -52,10 +52,14 @@ const PhaseAIReview: React.FC<PhaseAIReviewProps> = ({ problem, onNext, onEscala
             </button>
             <button
                 onClick={onEscalate}
-                disabled={problem.escalated_for_human_review}
+                disabled={problem.escalated_for_human_review || isAiLoading === 'escalate'}
                 className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-gray-600 disabled:cursor-not-allowed"
             >
-                {problem.escalated_for_human_review ? 'Awaiting Human Verdict' : 'Escalate to Human Wombat (Premium)'}
+                {problem.escalated_for_human_review
+                    ? 'Awaiting Human Verdict'
+                    : isAiLoading === 'escalate'
+                        ? 'Escalating...'
+                        : 'Escalate to Human Wombat (Premium)'}
             </button>
         </div>
     </div>

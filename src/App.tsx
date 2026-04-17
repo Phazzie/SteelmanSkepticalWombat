@@ -4,6 +4,7 @@ import { useAppContext } from './hooks/useAppContext';
 import WombatAvatar from './components/ui/WombatAvatar';
 import ProgressBar from './components/ui/ProgressBar';
 import Notification from './components/ui/Notification';
+import ErrorBoundary from './components/ui/ErrorBoundary';
 import PhaseAgreeStatement from './components/phases/PhaseAgreeStatement';
 import PhasePrivateVersion from './components/phases/PhasePrivateVersion';
 import PhaseTranslation from './components/phases/PhaseTranslation';
@@ -16,6 +17,7 @@ import PhaseWager from './components/phases/PhaseWager';
 import PhaseSolution from './components/phases/PhaseSolution';
 import PhaseResolved from './components/phases/PhaseResolved';
 import { WOMBAT_TROPHY_URL } from './constants';
+import { FirestoreTimestamp, toJsDate } from './types';
 
 const App = () => {
     return (
@@ -45,6 +47,10 @@ const MainApp = () => {
         handlePrivateSubmit,
         handleProposeSolution,
         handleSolutionSteelmanSubmit,
+        handleBrainstorm,
+        handleCritique,
+        handleGenerateImage,
+        handleEscalate,
         handleEmergencyWombat,
     } = useAppContext();
 
@@ -57,6 +63,11 @@ const MainApp = () => {
         const link = `${window.location.origin}${window.location.pathname}?invite=${user.uid}`;
         setInviteLink(link);
         setShowInvite(true);
+    };
+
+    const getProblemDateLabel = (problem: { createdAt?: FirestoreTimestamp | Date }) => {
+        if (!problem.createdAt) return 'unknown date';
+        return toJsDate(problem.createdAt).toLocaleDateString();
     };
 
     const renderPhase = () => {
@@ -100,7 +111,7 @@ const MainApp = () => {
                 phaseComponent = <PhaseSteelmanApproval problem={currentProblem} onApprove={handleSteelmanApproval} myRole={myRole} partnerName={partner?.name || 'Your Partner'} />;
                 break;
             case 'ai_review':
-                phaseComponent = <PhaseAIReview problem={currentProblem} onNext={() => handleUpdate(currentProblem.id, { status: 'propose_solutions' })} onEscalate={() => {}} isAiLoading={isAiLoading} />;
+                phaseComponent = <PhaseAIReview problem={currentProblem} onNext={() => handleUpdate(currentProblem.id, { status: 'propose_solutions' })} onEscalate={handleEscalate} isAiLoading={isAiLoading} />;
                 break;
             case 'propose_solutions':
                 phaseComponent = <PhaseProposeSolutions problem={currentProblem} onSave={handleUpdate} onSubmit={handleProposeSolution} myRole={myRole} />;
@@ -112,10 +123,10 @@ const MainApp = () => {
                  phaseComponent = <PhaseWager problem={currentProblem} onNext={() => handleUpdate(currentProblem.id, {status: 'solution'})} isAiLoading={isAiLoading} />;
                 break;
             case 'solution':
-                phaseComponent = <PhaseSolution problem={currentProblem} onUpdate={handleUpdate} onAgree={handleAgreement} onBrainstorm={() => {}} myRole={myRole} isAiLoading={isAiLoading} />;
+                phaseComponent = <PhaseSolution problem={currentProblem} onUpdate={handleUpdate} onAgree={handleAgreement} onBrainstorm={handleBrainstorm} myRole={myRole} isAiLoading={isAiLoading} />;
                 break;
             case 'resolved':
-                phaseComponent = <PhaseResolved problem={currentProblem} onUpdate={handleUpdate} myRole={myRole} onGenerateImage={() => {}} isAiLoading={isAiLoading} mementoImage={null} onCritique={() => {}} />;
+                phaseComponent = <PhaseResolved problem={currentProblem} onUpdate={handleUpdate} myRole={myRole} onGenerateImage={handleGenerateImage} isAiLoading={isAiLoading} mementoImage={null} onCritique={handleCritique} />;
                 break;
             default:
                 phaseComponent = <p>Unknown phase. The Wombat is confused.</p>;
@@ -124,20 +135,15 @@ const MainApp = () => {
         return (
             <div className="bg-gray-900 p-4 sm:p-6 rounded-xl shadow-2xl border border-gray-700">
                 <ProgressBar status={currentProblem.status} />
-                {phaseComponent}
+                <ErrorBoundary section={currentProblem.status}>
+                    {phaseComponent}
+                </ErrorBoundary>
             </div>
         );
     }
 
     return (
         <div className="min-h-screen bg-gray-800 font-sans text-gray-200 bg-gradient-to-br from-gray-800 to-gray-900">
-            <style>
-                {`
-                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Playfair+Display:wght@700&display=swap');
-                    .font-serif { font-family: 'Playfair Display', serif; }
-                    .font-sans { font-family: 'Inter', sans-serif; }
-                `}
-            </style>
             <Notification notification={notification} onDismiss={() => setNotification({ ...notification, show: false })} />
 
             {showInvite && (
@@ -202,7 +208,9 @@ const MainApp = () => {
                                 <div className="space-y-2 max-h-[60vh] overflow-y-auto">
                                     {problems.filter(p => activeTab === 'active' ? p.status !== 'resolved' : p.status === 'resolved').map(p => (
                                         <div key={p.id} onClick={() => setCurrentProblem(p)} className={`p-4 rounded-lg cursor-pointer transition ${currentProblem?.id === p.id ? 'bg-lime-900/50 ring-2 ring-lime-400' : 'bg-gray-800 hover:bg-gray-700'}`}>
-                                            <p className="font-semibold truncate text-white">{p.problem_statement || `Problem from ${new Date(p.createdAt.seconds * 1000).toLocaleDateString()}`}</p>
+                                            <p className="font-semibold truncate text-white">
+                                                {p.problem_statement || `Problem from ${getProblemDateLabel(p)}`}
+                                            </p>
                                             <span className={`text-xs font-medium px-2 py-1 rounded-full ${ p.status === 'resolved' ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'}`}>{p.status.replace(/_/g, ' ')}</span>
                                         </div>
                                     ))}

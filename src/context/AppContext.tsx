@@ -13,7 +13,16 @@ import {
     updateProblem,
     getDoc,
 } from '../services/firebase';
-import { getTranslation, getAIAnalysis as getWombatAnalysis, getWager, getBSAnalysis, getEmergencyWombat } from '../services/ai';
+import {
+    getTranslation,
+    getAIAnalysis as getWombatAnalysis,
+    getWager,
+    getBSAnalysis,
+    getEmergencyWombat,
+    getBrainstorm,
+    getCritique,
+} from '../services/ai';
+import { Problem } from '../types';
 
 interface AppContextType {
     user: any;
@@ -34,8 +43,11 @@ interface AppContextType {
     handleSteelmanSubmit: (text: string) => void;
     handleSteelmanApproval: () => void;
     handleSolutionSteelmanSubmit: (text: string) => void;
-    handleMemento: () => void;
     handleEmergencyWombat: () => void;
+    handleEscalate: () => void;
+    handleBrainstorm: () => void;
+    handleCritique: (problem: Problem) => void;
+    handleGenerateImage: () => void;
     startNewProblem: () => void;
     setCurrentProblem: (problem: any) => void;
     handleAgreement: (type: string) => void;
@@ -220,6 +232,77 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
+    const handleBrainstorm = async () => {
+        if (!currentProblem) return;
+        setIsAiLoading('brainstorm');
+        const result = await getBrainstorm(currentProblem);
+        if (result) {
+            await updateProblem(currentProblem.id, { brainstormed_solutions: result });
+        } else {
+            setNotification({ show: true, message: "The Wombat's brainstorming circuit is jammed. Try again.", type: 'warning', duration: 4000 });
+        }
+        setIsAiLoading(null);
+    };
+
+    const handleCritique = async (problem: Problem) => {
+        setIsAiLoading('critique');
+        const result = await getCritique(problem);
+        if (result) {
+            setNotification({ show: true, message: result, type: 'info', duration: 8000 });
+        } else {
+            setNotification({ show: true, message: "The Wombat refused to critique itself. Typical.", type: 'warning', duration: 4000 });
+        }
+        setIsAiLoading(null);
+    };
+
+    const handleGenerateImage = () => {
+        setNotification({
+            show: true,
+            message: "AI image generation requires a separate image API key (not yet configured). Coming soon.",
+            type: 'info',
+            duration: 5000,
+        });
+    };
+
+    const handleEscalate = async () => {
+        if (!currentProblem) return;
+        if (isAiLoading === 'escalate') return;
+        if (currentProblem.escalated_for_human_review) {
+            setNotification({
+                show: true,
+                message: "Already escalated. The human wombat has your file.",
+                type: 'info',
+                duration: 4000,
+            });
+            return;
+        }
+
+        setIsAiLoading('escalate');
+        try {
+            await updateProblem(currentProblem.id, {
+                escalated_for_human_review: true,
+                human_verdict: currentProblem.human_verdict || "Pending human review.",
+            });
+
+            setNotification({
+                show: true,
+                message: "Escalated. Waiting for human wombat intervention.",
+                type: 'info',
+                duration: 4000,
+            });
+        } catch (error) {
+            console.error("Escalation Error:", error);
+            setNotification({
+                show: true,
+                message: "Escalation failed. Try again.",
+                type: 'warning',
+                duration: 4000,
+            });
+        } finally {
+            setIsAiLoading(null);
+        }
+    };
+
     const value = {
         user,
         partner,
@@ -232,8 +315,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         signIn: () => anonymousSignIn(),
         signInWithToken: (token: string) => customTokenSignIn(token),
         invitePartner: (inviteeId: string) => linkPartners(user.uid, inviteeId),
-        createProblem: () => {},
-        setCurrentProblemById: (_id: string) => {},
+        createProblem: async () => {
+            if (!user || !partner) return;
+            const docRef = await createNewProblem(user, partner);
+            const newProblem = { id: docRef.id, ...(await getDoc(docRef)).data() };
+            setCurrentProblem(newProblem);
+        },
+        setCurrentProblemById: (id: string) => {
+            const selected = problems.find((p) => p.id === id);
+            if (selected) setCurrentProblem(selected);
+        },
         startNewProblem: async () => {
             const docRef = await createNewProblem(user, partner);
             const newProblem = { id: docRef.id, ...(await getDoc(docRef)).data() };
@@ -248,15 +339,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         handleSteelmanSubmit,
         handleProposeSolution,
         handleSolutionSteelmanSubmit,
+        handleBrainstorm,
+        handleCritique,
+        handleGenerateImage,
+        handleEscalate,
         handleBSMeter: async (text) => {
             setIsAiLoading('bs-meter');
             const result = await getBSAnalysis(text);
             setNotification({ show: true, message: result || "The Wombat is speechless.", type: 'info', duration: 4000 });
             setIsAiLoading(null);
-        },
-        handleMemento: async () => {
-            // Placeholder for memento functionality
-            setNotification({ show: true, message: "Memento feature coming soon!", type: 'info', duration: 4000 });
         },
         handleEmergencyWombat: async () => {
             setIsAiLoading('emergency');

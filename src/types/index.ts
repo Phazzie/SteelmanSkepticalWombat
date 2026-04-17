@@ -1,10 +1,42 @@
 /**
+ * Minimal shape of a Firestore Timestamp as returned by the Firestore SDK.
+ * Using a local interface avoids importing the firebase package into generic type files.
+ */
+export interface FirestoreTimestamp {
+    seconds: number;
+    nanoseconds: number;
+    toDate(): Date;
+}
+
+/**
+ * Safely converts a FirestoreTimestamp or plain Date to a JavaScript Date object.
+ */
+const isFirestoreTimestamp = (value: unknown): value is FirestoreTimestamp => {
+    return (
+        typeof value === 'object' &&
+        value !== null &&
+        'toDate' in value &&
+        typeof (value as FirestoreTimestamp).toDate === 'function' &&
+        'seconds' in value &&
+        'nanoseconds' in value
+    );
+};
+
+export const toJsDate = (value: FirestoreTimestamp | Date): Date => {
+    if (isFirestoreTimestamp(value)) {
+        return value.toDate();
+    }
+    return value;
+};
+
+/**
  * Defines the core data structure for a "problem" being worked on by the users.
  * This interface is used throughout the application to ensure type consistency.
  */
 export interface Problem {
     id: string;
     problem_statement: string;
+    solution_statement?: string;
     user1_private_version: string;
     user2_private_version: string;
     user1_steelman: string;
@@ -20,11 +52,12 @@ export interface Problem {
     user2_proposed_solution: string;
     user1_solution_steelman: string;
     user2_solution_steelman: string;
-    // Additional properties from other branches
+    brainstormed_solutions?: string;
     roles?: { [userId: string]: 'user1' | 'user2' };
     status?: string;
     participants?: string[];
-    createdAt?: Date;
+    // Firestore returns Timestamp objects at runtime even though we store Date values
+    createdAt?: FirestoreTimestamp | Date;
     user1_agreed_problem?: boolean;
     user2_agreed_problem?: boolean;
     user1_submitted_private?: boolean;
@@ -40,5 +73,8 @@ export interface Problem {
     user1_agreed_solution?: boolean;
     user2_agreed_solution?: boolean;
     wombats_wager?: string;
-    solution_check_date?: Date;
+    // Firestore returns a Timestamp with .toDate(); the plain Date fallback is for new items
+    solution_check_date?: FirestoreTimestamp | Date;
+    user1_post_mortem?: string;
+    user2_post_mortem?: string;
 }

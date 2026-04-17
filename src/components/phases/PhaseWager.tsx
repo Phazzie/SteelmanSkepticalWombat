@@ -12,8 +12,12 @@ const PhaseWager = ({ problem, onNext, isAiLoading }) => (
                 <p className="text-amber-200 whitespace-pre-wrap">{problem.wombats_wager}</p>
             </div>
         )}
-         <button onClick={onNext} className="mt-6 w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition">
-            Proceed to Final Solution
+        <button
+            onClick={onNext}
+            disabled={!problem.wombats_wager || isAiLoading === 'wager'}
+            className="mt-6 w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-gray-600 disabled:cursor-not-allowed"
+        >
+            {isAiLoading === 'wager' ? 'Wombat is thinking...' : 'Proceed to Final Solution'}
         </button>
     </div>
 );

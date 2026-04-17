@@ -1,71 +1,119 @@
 /**
  * Tests for the AI service functions.
- * These tests verify that our AI functions are working correctly.
+ * The Gemini API is mocked via a stubbed fetch so no real network calls are made.
  */
 
-import { describe, test, expect, beforeEach } from 'vitest';
-import { getTranslation, getAIAnalysis, getBSAnalysis, getEmergencyWombat } from './ai';
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
+import { getTranslation, getAIAnalysis, getBSAnalysis, getEmergencyWombat, getBrainstorm, getCritique } from './ai';
+import { Problem } from '../types';
 
-// Mock environment variables
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+const stubFetchResponse = (text: string) => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+            candidates: [{ content: { parts: [{ text }] } }]
+        })
+    } as unknown as Response);
+};
+
+const mockProblem: Problem = {
+    id: 'test-problem-1',
+    problem_statement: 'We disagree about screen time.',
+    user1_private_version: 'They are always on their phone.',
+    user2_private_version: 'I need downtime after work.',
+    user1_steelman: 'My partner needs dedicated connection time.',
+    user2_steelman: 'My partner needs personal space to decompress.',
+    user1_proposed_solution: 'Phone-free dinners every night.',
+    user2_proposed_solution: 'One hour of solo time after work, then we connect.',
+    user1_solution_steelman: 'A structured routine gives them the connection they need.',
+    user2_solution_steelman: 'A boundary protects my recovery time.',
+    ai_analysis: 'The real issue is neither of you said what you actually wanted.',
+    human_verdict: '',
+    wombats_wager: 'Solution B wins. It names a concrete time boundary.',
+};
+
+// ---------------------------------------------------------------------------
+// Setup / teardown
+// ---------------------------------------------------------------------------
+
 beforeEach(() => {
-    // Mock the Gemini API key for testing
-    (import.meta as any).env = {
-        VITE_GEMINI_API_KEY: 'test-api-key'
-    };
+    vi.stubEnv('VITE_GEMINI_API_KEY', 'test-api-key-123');
+    // Ensure LangChain opt-in is disabled so we exercise the fetch path
+    vi.stubEnv('VITE_USE_LANGCHAIN', 'false');
 });
+
+afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetAllMocks();
+});
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
 
 describe('AI Service Functions', () => {
-    test('getTranslation should return a translation', async () => {
-        const mockText = "I feel like you don't listen to me anymore.";
-        
-        // Note: This would normally make an actual API call
-        // In a real test environment, we'd mock the API response
-        const result = await getTranslation(mockText);
-        
-        // Basic validation - should return a string
-        expect(typeof result).toBe('string');
+    test('getTranslation returns the translated text', async () => {
+        stubFetchResponse('You want attention NOW.');
+        const result = await getTranslation("I feel like you don't listen to me anymore.");
+        expect(result).toBe('You want attention NOW.');
     });
 
-    test('getAIAnalysis should analyze steelman arguments', async () => {
-        const mockProblem = {
-            id: "test-problem",
-            problem_statement: "Test problem",
-            user1_private_version: "",
-            user2_private_version: "",
-            user1_steelman: "I understand my partner feels unheard when I'm on my phone.",
-            user2_steelman: "I understand my partner needs downtime after work.",
-            user1_proposed_solution: "",
-            user2_proposed_solution: "",
-            user1_solution_steelman: "",
-            user2_solution_steelman: "",
-            ai_analysis: "",
-            human_verdict: "",
-        };
-        
+    test('getTranslation returns null when API key is missing', async () => {
+        vi.stubEnv('VITE_GEMINI_API_KEY', '');
+        const result = await getTranslation('some text');
+        expect(result).toBeNull();
+    });
+
+    test('getAIAnalysis returns analysis text', async () => {
+        const expected = 'The real issue is control, not screen time.';
+        stubFetchResponse(expected);
         const result = await getAIAnalysis(mockProblem);
-        
-        expect(typeof result).toBe('string');
+        expect(result).toBe(expected);
     });
 
-    test('getBSAnalysis should detect non-genuine steelman attempts', async () => {
-        const mockText = "I understand you're wrong about everything.";
-        
-        const result = await getBSAnalysis(mockText);
-        
-        expect(typeof result).toBe('string');
+    test('getBSAnalysis returns meter reading', async () => {
+        stubFetchResponse('That is not a steelman, that is a veiled attack with a bow on it.');
+        const result = await getBSAnalysis('I understand you are wrong about everything.');
+        expect(result).toBe('That is not a steelman, that is a veiled attack with a bow on it.');
     });
 
-    test('getEmergencyWombat should provide emergency advice', async () => {
+    test('getEmergencyWombat returns advice', async () => {
+        stubFetchResponse('Have you tried being less reactive? Asking for a wombat.');
         const result = await getEmergencyWombat();
-        
-        expect(typeof result).toBe('string');
+        expect(result).toBe('Have you tried being less reactive? Asking for a wombat.');
+    });
+
+    test('getBrainstorm returns solution ideas', async () => {
+        const expected = '1. Set a 30-minute phone-free window after dinner.\n2. Use a shared calendar.';
+        stubFetchResponse(expected);
+        const result = await getBrainstorm(mockProblem);
+        expect(result).toBe(expected);
+    });
+
+    test('getCritique returns session critique', async () => {
+        const expected = 'Both partners avoided naming the real power dynamic.';
+        stubFetchResponse(expected);
+        const result = await getCritique(mockProblem);
+        expect(result).toBe(expected);
+    });
+
+    test('callGemini handles a non-ok API response gracefully', async () => {
+        globalThis.fetch = vi.fn().mockResolvedValue({
+            ok: false,
+            status: 429,
+            json: () => Promise.resolve({})
+        } as unknown as Response);
+        const result = await getTranslation('rate limited');
+        expect(result).toBeNull();
     });
 });
 
-// Integration tests would go here
 describe('AI Integration Tests', () => {
     test.skip('Full workflow integration test', async () => {
-        // This would test the entire AI workflow
-        // Skipped for now as it requires actual API calls
+        // Requires a real VITE_GEMINI_API_KEY set in the environment.
     });
 });
