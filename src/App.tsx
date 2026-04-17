@@ -17,6 +17,7 @@ import PhaseWager from './components/phases/PhaseWager';
 import PhaseSolution from './components/phases/PhaseSolution';
 import PhaseResolved from './components/phases/PhaseResolved';
 import { WOMBAT_TROPHY_URL } from './constants';
+import { toJsDate } from './types';
 
 const App = () => {
     return (
@@ -49,6 +50,7 @@ const MainApp = () => {
         handleBrainstorm,
         handleCritique,
         handleGenerateImage,
+        handleEscalate,
         handleEmergencyWombat,
     } = useAppContext();
 
@@ -104,7 +106,7 @@ const MainApp = () => {
                 phaseComponent = <PhaseSteelmanApproval problem={currentProblem} onApprove={handleSteelmanApproval} myRole={myRole} partnerName={partner?.name || 'Your Partner'} />;
                 break;
             case 'ai_review':
-                phaseComponent = <PhaseAIReview problem={currentProblem} onNext={() => handleUpdate(currentProblem.id, { status: 'propose_solutions' })} onEscalate={() => {}} isAiLoading={isAiLoading} />;
+                phaseComponent = <PhaseAIReview problem={currentProblem} onNext={() => handleUpdate(currentProblem.id, { status: 'propose_solutions' })} onEscalate={handleEscalate} isAiLoading={isAiLoading} />;
                 break;
             case 'propose_solutions':
                 phaseComponent = <PhaseProposeSolutions problem={currentProblem} onSave={handleUpdate} onSubmit={handleProposeSolution} myRole={myRole} />;
@@ -201,7 +203,9 @@ const MainApp = () => {
                                 <div className="space-y-2 max-h-[60vh] overflow-y-auto">
                                     {problems.filter(p => activeTab === 'active' ? p.status !== 'resolved' : p.status === 'resolved').map(p => (
                                         <div key={p.id} onClick={() => setCurrentProblem(p)} className={`p-4 rounded-lg cursor-pointer transition ${currentProblem?.id === p.id ? 'bg-lime-900/50 ring-2 ring-lime-400' : 'bg-gray-800 hover:bg-gray-700'}`}>
-                                            <p className="font-semibold truncate text-white">{p.problem_statement || `Problem from ${new Date(p.createdAt.seconds * 1000).toLocaleDateString()}`}</p>
+                                            <p className="font-semibold truncate text-white">
+                                                {p.problem_statement || `Problem from ${p.createdAt ? toJsDate(p.createdAt).toLocaleDateString() : 'unknown date'}`}
+                                            </p>
                                             <span className={`text-xs font-medium px-2 py-1 rounded-full ${ p.status === 'resolved' ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'}`}>{p.status.replace(/_/g, ' ')}</span>
                                         </div>
                                     ))}
