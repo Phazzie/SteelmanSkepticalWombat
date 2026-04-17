@@ -6,9 +6,9 @@ interface PhaseResolvedProps {
     problem: Problem;
     onUpdate: (problemId: string, data: Record<string, unknown>) => void;
     myRole: 'user1' | 'user2';
-    onGenerateImage: () => void;
+    onGenerateMemento: () => void;
     isAiLoading: string | boolean | null;
-    mementoImage: string | null;
+    mementoText: string | null;
     onCritique: (problem: Problem) => void;
 }
 
@@ -17,9 +17,9 @@ const PhaseResolved: React.FC<PhaseResolvedProps> = ({
     problem,
     onUpdate,
     myRole,
-    onGenerateImage,
+    onGenerateMemento,
     isAiLoading,
-    mementoImage,
+    mementoText,
     onCritique,
 }) => {
     const isPostMortemTime =
@@ -48,11 +48,15 @@ const PhaseResolved: React.FC<PhaseResolvedProps> = ({
 
             <div className="border-t-2 border-dashed border-purple-500 pt-6">
                 <h3 className="text-2xl font-serif text-purple-300 mb-2">Create a Memento</h3>
-                <p className="text-gray-400 mb-4">Generate a unique AI artwork that represents your journey through this disagreement.</p>
-                <button onClick={onGenerateImage} disabled={isAiLoading === 'image'} className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-gray-600 disabled:cursor-not-allowed">
-                    {isAiLoading === 'image' ? 'Generating...' : 'Generate a Memento'}
+                <p className="text-gray-400 mb-4">Let the Wombat write a short, wry poem to commemorate your journey through this disagreement.</p>
+                <button onClick={onGenerateMemento} disabled={isAiLoading === 'image'} className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-gray-600 disabled:cursor-not-allowed">
+                    {isAiLoading === 'image' ? 'Writing...' : 'Generate a Memento'}
                 </button>
-                {mementoImage && <img src={mementoImage} alt="AI-generated memento" className="mt-4 rounded-lg shadow-lg mx-auto" />}
+                {mementoText && (
+                    <blockquote className="mt-4 mx-auto max-w-md p-4 bg-purple-900/30 border border-purple-500/40 rounded-lg text-purple-200 italic whitespace-pre-line text-sm leading-relaxed">
+                        {mementoText}
+                    </blockquote>
+                )}
             </div>
 
             {isPostMortemTime && (

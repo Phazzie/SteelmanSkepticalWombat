@@ -173,3 +173,17 @@ export const getEmergencyWombat = (): Promise<string | null> => {
     const prompt = `**Persona Lock-in:** You are The Emergency Wombat. Someone hit the panic button. Provide one to two sentences of witty, slightly unhelpful, but oddly truthful advice. Do not be comforting. Be the wombat.`;
     return callGemini(prompt);
 };
+
+/**
+ * Generates a short, wry "memento poem" commemorating a resolved conflict.
+ * @param {Problem} problem The resolved problem.
+ * @returns {Promise<string|null>} A three-to-five line poem capturing the argument's essence.
+ */
+export const getMementoPoem = (problem: Problem): Promise<string | null> => {
+    const prompt = `**Persona Lock-in:** You are The Skeptical Wombat — dry, witty, and allergic to sentimentality.
+**Task:** Two humans have resolved their disagreement. Write a short memento poem (3–5 lines) that captures the essence of what they argued about and how it ended. It should be witty and slightly wry — not congratulatory. Think haiku-meets-Oscar-Wilde. No titles. Just the poem.
+**The Disagreement:** "${problem.problem_statement}"
+**The Agreed Solution:** "${problem.solution_statement || 'Reached consensus'}"
+**Poem:**`;
+    return callGemini(prompt);
+};

@@ -21,7 +21,9 @@ import {
     getEmergencyWombat,
     getBrainstorm,
     getCritique,
+    getMementoPoem,
 } from '../services/ai';
+import { toJsDate } from '../types';
 import { Problem } from '../types';
 
 interface AppContextType {
@@ -32,6 +34,7 @@ interface AppContextType {
     isLoading: boolean;
     isAiLoading: any;
     notification: any;
+    mementoText: string | null;
     setNotification: (notification: any) => void;
     signIn: () => void;
     signInWithToken: (token: string) => void;
@@ -66,6 +69,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [isAiLoading, setIsAiLoading] = useState(null);
     const [notification, setNotification] = useState({ show: false, message: '', type: 'info', duration: 4000 });
+    const [mementoText, setMementoText] = useState<string | null>(null);
 
     const getAIAnalysis = useCallback(async (problem) => {
         setIsAiLoading('verdict');
@@ -126,7 +130,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         if (!user?.uid) return;
         const unsubscribe = onProblemsSnapshot(user.uid, (querySnapshot) => {
-            const fetchedProblems = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+            const fetchedProblems = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => {
+                const aDate = a.createdAt ? toJsDate(a.createdAt).getTime() : 0;
+                const bDate = b.createdAt ? toJsDate(b.createdAt).getTime() : 0;
+                return bDate - aDate;
+            });
             setProblems(fetchedProblems);
             if (currentProblem) {
                 const updatedCurrent = fetchedProblems.find(p => p.id === currentProblem.id);
@@ -255,13 +263,21 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setIsAiLoading(null);
     };
 
-    const handleGenerateImage = () => {
-        setNotification({
-            show: true,
-            message: "AI image generation requires a separate image API key (not yet configured). Coming soon.",
-            type: 'info',
-            duration: 5000,
-        });
+    const handleGenerateImage = async () => {
+        if (!currentProblem) return;
+        setIsAiLoading('image');
+        const poem = await getMementoPoem(currentProblem);
+        if (poem) {
+            setMementoText(poem);
+        } else {
+            setNotification({
+                show: true,
+                message: "The Wombat couldn't find the right words. Try again.",
+                type: 'warning',
+                duration: 4000,
+            });
+        }
+        setIsAiLoading(null);
     };
 
     const handleEscalate = async () => {
@@ -311,6 +327,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         isLoading,
         isAiLoading,
         notification,
+        mementoText,
         setNotification,
         signIn: () => anonymousSignIn(),
         signInWithToken: (token: string) => customTokenSignIn(token),
@@ -326,9 +343,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             if (selected) setCurrentProblem(selected);
         },
         startNewProblem: async () => {
+            if (!user || !partner) {
+                console.warn('startNewProblem called before user/partner are ready.');
+                return;
+            }
             const docRef = await createNewProblem(user, partner);
             const newProblem = { id: docRef.id, ...(await getDoc(docRef)).data() };
-            setCurrentProblem(newProblem)
+            setCurrentProblem(newProblem);
         },
         setCurrentProblem,
         updateUserName: (newName) => updateUserNameInDb(user.uid, newName),
