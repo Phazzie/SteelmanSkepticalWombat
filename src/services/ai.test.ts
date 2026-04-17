@@ -4,7 +4,7 @@
  */
 
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
-import { getTranslation, getAIAnalysis, getBSAnalysis, getEmergencyWombat, getBrainstorm, getCritique } from './ai';
+import { getTranslation, getAIAnalysis, getBSAnalysis, getEmergencyWombat, getBrainstorm, getCritique, getWager } from './ai';
 import { Problem } from '../types';
 
 // ---------------------------------------------------------------------------
@@ -98,6 +98,13 @@ describe('AI Service Functions', () => {
         const expected = 'Both partners avoided naming the real power dynamic.';
         stubFetchResponse(expected);
         const result = await getCritique(mockProblem);
+        expect(result).toBe(expected);
+    });
+
+    test('getWager returns wager text based on both proposed solutions', async () => {
+        const expected = 'Solution B wins. It names a concrete time boundary.';
+        stubFetchResponse(expected);
+        const result = await getWager(mockProblem, 'A structured routine gives them the connection they need.');
         expect(result).toBe(expected);
     });
 

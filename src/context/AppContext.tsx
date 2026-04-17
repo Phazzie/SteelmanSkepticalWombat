@@ -216,19 +216,21 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         if (!currentProblem || !user) return;
         const myRole = currentProblem.roles[user.uid];
         const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
-        const updates = { [`${myRole}_solution_steelman`]: text };
+        const steelmanUpdate = { [`${myRole}_solution_steelman`]: text };
 
         if (currentProblem[`${partnerRole}_solution_steelman`]) {
+            // Always persist the steelman text first so it isn't lost if the wager API fails.
+            await handleUpdate(currentProblem.id, steelmanUpdate);
             setIsAiLoading('wager');
             const wagerResult = await getWager(currentProblem, text);
-            if(wagerResult) {
-                updates.wombats_wager = wagerResult;
-                updates.status = 'wager';
-                await handleUpdate(currentProblem.id, updates);
+            if (wagerResult) {
+                await handleUpdate(currentProblem.id, { wombats_wager: wagerResult, status: 'wager' });
+            } else {
+                setNotification({ show: true, message: "Wager generation failed. Your steelman was saved — refresh to retry.", type: 'warning', duration: 5000 });
             }
             setIsAiLoading(null);
         } else {
-            await handleUpdate(currentProblem.id, updates);
+            await handleUpdate(currentProblem.id, steelmanUpdate);
         }
     };
 
