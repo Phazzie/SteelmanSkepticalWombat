@@ -38,6 +38,7 @@ class ErrorBoundary extends Component<Props, State> {
 
     render() {
         if (this.state.hasError) {
+            const isDev = import.meta.env.DEV;
             return (
                 <div className="p-8 bg-gray-900 rounded-xl border-2 border-red-500/50 text-center space-y-4">
                     <p className="text-4xl">🦡</p>
@@ -49,7 +50,12 @@ class ErrorBoundary extends Component<Props, State> {
                             ? `The "${this.props.section}" section crashed.`
                             : 'Something went wrong in this section.'}
                     </p>
-                    <p className="text-xs text-gray-300 font-mono break-all">{this.state.errorMessage}</p>
+                    {isDev && (
+                        <details className="text-left">
+                            <summary className="text-xs text-gray-300 cursor-pointer">Error details (dev only)</summary>
+                            <p className="text-xs text-gray-300 font-mono break-all mt-2">{this.state.errorMessage}</p>
+                        </details>
+                    )}
                     <button
                         onClick={this.handleReset}
                         className="mt-4 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition"

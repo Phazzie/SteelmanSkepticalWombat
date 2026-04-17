@@ -5,14 +5,15 @@ import DraftTextarea from '../ui/DraftTextarea';
 const PhaseSolutionSteelman = ({ problem, onSave, onSubmit, myRole, partnerName }) => {
     const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
     const partnerSolution = problem[`${partnerRole}_proposed_solution`];
-    const iHaveSubmitted = !!problem[`${myRole}_solution_steelman`];
+    const mySteelman = problem[`${myRole}_solution_steelman`] || '';
+    const iHaveSubmitted = !!mySteelman;
     const partnerHasSubmitted = !!problem[`${partnerRole}_solution_steelman`];
 
-    const [draftText, setDraftText] = useState(problem[`${myRole}_solution_steelman`] || '');
+    const [draftText, setDraftText] = useState(mySteelman);
 
     useEffect(() => {
-        setDraftText(problem[`${myRole}_solution_steelman`] || '');
-    }, [problem, myRole]);
+        setDraftText(mySteelman);
+    }, [mySteelman, myRole]);
 
     return (
         <div>
@@ -26,7 +27,10 @@ const PhaseSolutionSteelman = ({ problem, onSave, onSubmit, myRole, partnerName 
                 value={draftText}
                 onChange={(e) => setDraftText(e.target.value)}
                 onSave={(text) => onSave(problem.id, { [`${myRole}_solution_steelman`]: text })}
-                onSubmit={onSubmit}
+                onSubmit={() => {
+                    onSave(problem.id, { [`${myRole}_solution_steelman`]: draftText });
+                    onSubmit(draftText);
+                }}
                 placeholder={`I understand ${partnerName}'s solution to mean...`}
                 disabled={iHaveSubmitted || !partnerSolution}
             />

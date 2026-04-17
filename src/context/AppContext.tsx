@@ -266,6 +266,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     const handleEscalate = async () => {
         if (!currentProblem) return;
+        if (isAiLoading === 'escalate') return;
         if (currentProblem.escalated_for_human_review) {
             setNotification({
                 show: true,
@@ -276,17 +277,30 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             return;
         }
 
-        await updateProblem(currentProblem.id, {
-            escalated_for_human_review: true,
-            human_verdict: currentProblem.human_verdict || "Pending human review.",
-        });
+        setIsAiLoading('escalate');
+        try {
+            await updateProblem(currentProblem.id, {
+                escalated_for_human_review: true,
+                human_verdict: currentProblem.human_verdict || "Pending human review.",
+            });
 
-        setNotification({
-            show: true,
-            message: "Escalated. Waiting for human wombat intervention.",
-            type: 'info',
-            duration: 4000,
-        });
+            setNotification({
+                show: true,
+                message: "Escalated. Waiting for human wombat intervention.",
+                type: 'info',
+                duration: 4000,
+            });
+        } catch (error) {
+            console.error("Escalation Error:", error);
+            setNotification({
+                show: true,
+                message: "Escalation failed. Try again.",
+                type: 'warning',
+                duration: 4000,
+            });
+        } finally {
+            setIsAiLoading(null);
+        }
     };
 
     const value = {

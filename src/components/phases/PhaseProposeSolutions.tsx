@@ -3,14 +3,16 @@ import DraftTextarea from '../ui/DraftTextarea';
 
 /** Renders UI for Phase 7: Proposing individual solutions. */
 const PhaseProposeSolutions = ({ problem, onSave, onSubmit, myRole }) => {
-    const iHaveProposed = !!problem[`${myRole}_proposed_solution`];
-    const partnerHasProposed = !!problem[`${myRole === 'user1' ? 'user2' : 'user1'}_proposed_solution`];
+    const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
+    const proposedSolution = problem[`${myRole}_proposed_solution`] || '';
+    const iHaveProposed = !!proposedSolution;
+    const partnerHasProposed = !!problem[`${partnerRole}_proposed_solution`];
 
-    const [draftText, setDraftText] = useState(problem[`${myRole}_proposed_solution`] || '');
+    const [draftText, setDraftText] = useState(proposedSolution);
 
     useEffect(() => {
-        setDraftText(problem[`${myRole}_proposed_solution`] || '');
-    }, [problem, myRole]);
+        setDraftText(proposedSolution);
+    }, [proposedSolution, myRole]);
 
     return (
         <div>
@@ -20,7 +22,10 @@ const PhaseProposeSolutions = ({ problem, onSave, onSubmit, myRole }) => {
                 value={draftText}
                 onChange={(e) => setDraftText(e.target.value)}
                 onSave={(text) => onSave(problem.id, { [`${myRole}_proposed_solution`]: text })}
-                onSubmit={onSubmit}
+                onSubmit={() => {
+                    onSave(problem.id, { [`${myRole}_proposed_solution`]: draftText });
+                    onSubmit(draftText);
+                }}
                 placeholder="My proposed solution is..."
                 disabled={iHaveProposed}
             />

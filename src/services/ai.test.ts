@@ -63,7 +63,7 @@ describe('AI Service Functions', () => {
     });
 
     test('getTranslation returns null when API key is missing', async () => {
-        vi.unstubAllEnvs(); // remove the key set in beforeEach
+        vi.stubEnv('VITE_GEMINI_API_KEY', '');
         const result = await getTranslation('some text');
         expect(result).toBeNull();
     });
