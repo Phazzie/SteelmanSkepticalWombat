@@ -9,7 +9,7 @@ import { Problem } from '../../types';
 interface PhaseSteelmanProps {
     problem: Problem;
     onSave: (problemId: string, data: { [key: string]: string }) => void;
-    onSubmit: () => void;
+    onSubmit: (text: string) => void;
     myRole: 'user1' | 'user2';
     isAiLoading: boolean | string;
 }
@@ -22,12 +22,16 @@ const PhaseSteelman: React.FC<PhaseSteelmanProps> = ({ problem, onSave, onSubmit
     const { handleBSMeter } = useAppContext();
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    // This state now holds the real-time value of the textarea.
-    const [draftText, setDraftText] = useState(problem[`${myRole}_steelman`] || '');
+    const mySteelman = problem[`${myRole}_steelman`] || '';
 
+    // This state now holds the real-time value of the textarea.
+    const [draftText, setDraftText] = useState(mySteelman);
+
+    // Sync only when the specific steelman field (or role) changes, not on every
+    // snapshot update, so unrelated partner/AI field changes don't clobber the draft.
     useEffect(() => {
-        setDraftText(problem[`${myRole}_steelman`] || '');
-    }, [problem, myRole]);
+        setDraftText(mySteelman);
+    }, [mySteelman]);
 
     // Determine the submission status for both the current user and their partner.
     const iHaveSubmitted = problem[`${myRole}_submitted_steelman`];
@@ -56,7 +60,10 @@ const PhaseSteelman: React.FC<PhaseSteelmanProps> = ({ problem, onSave, onSubmit
                 value={draftText}
                 onChange={handleTextChange}
                 onSave={handleSave}
-                onSubmit={onSubmit}
+                onSubmit={() => {
+                    onSave(problem.id, { [`${myRole}_steelman`]: draftText });
+                    onSubmit(draftText);
+                }}
                 placeholder="I imagine my partner feels that..."
                 disabled={iHaveSubmitted}
             />
