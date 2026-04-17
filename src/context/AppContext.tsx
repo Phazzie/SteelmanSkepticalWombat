@@ -329,7 +329,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             if (selected) setCurrentProblem(selected);
         },
         startNewProblem: async () => {
-            if (!user || !partner) return;
+            if (!user || !partner) {
+                console.warn('startNewProblem called before user/partner are ready.');
+                return;
+            }
             const docRef = await createNewProblem(user, partner);
             const newProblem = { id: docRef.id, ...(await getDoc(docRef)).data() };
             setCurrentProblem(newProblem);
