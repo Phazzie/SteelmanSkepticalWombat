@@ -50,6 +50,7 @@ const MainApp = () => {
         handleBrainstorm,
         handleCritique,
         handleGenerateImage,
+        mementoText,
         handleEscalate,
         handleEmergencyWombat,
     } = useAppContext();
@@ -126,7 +127,7 @@ const MainApp = () => {
                 phaseComponent = <PhaseSolution problem={currentProblem} onUpdate={handleUpdate} onAgree={handleAgreement} onBrainstorm={handleBrainstorm} myRole={myRole} isAiLoading={isAiLoading} />;
                 break;
             case 'resolved':
-                phaseComponent = <PhaseResolved problem={currentProblem} onUpdate={handleUpdate} myRole={myRole} onGenerateImage={handleGenerateImage} isAiLoading={isAiLoading} mementoImage={null} onCritique={handleCritique} />;
+                phaseComponent = <PhaseResolved problem={currentProblem} onUpdate={handleUpdate} myRole={myRole} onGenerateMemento={handleGenerateImage} isAiLoading={isAiLoading} mementoText={mementoText} onCritique={handleCritique} />;
                 break;
             default:
                 phaseComponent = <p>Unknown phase. The Wombat is confused.</p>;
