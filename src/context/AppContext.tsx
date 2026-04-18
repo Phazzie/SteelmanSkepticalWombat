@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import {
     onAuthChange,
     anonymousSignIn,
@@ -23,6 +23,7 @@ import {
     getCritique,
 } from '../services/ai';
 import { Problem } from '../types';
+import { shouldRequestAIAnalysis } from './aiReviewGuard';
 
 interface AppContextType {
     user: any;
@@ -66,15 +67,43 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [isAiLoading, setIsAiLoading] = useState(null);
     const [notification, setNotification] = useState({ show: false, message: '', type: 'info', duration: 4000 });
+    const partnerUnsubRef = useRef<null | (() => void)>(null);
+
+    const safeUpdateProblem = useCallback(async (problemId: string, data: any, errorMessage?: string) => {
+        try {
+            await updateProblem(problemId, data);
+        } catch (error) {
+            console.error("Problem update failed:", error);
+            setNotification({
+                show: true,
+                message: errorMessage || "Update failed. Please retry.",
+                type: 'warning',
+                duration: 4000,
+            });
+            throw error;
+        }
+    }, []);
 
     const getAIAnalysis = useCallback(async (problem) => {
+        if (problem.verdict_in_progress) return;
         setIsAiLoading('verdict');
-        const analysisText = await getWombatAnalysis(problem);
-        if (analysisText) {
-            await updateProblem(problem.id, { ai_analysis: analysisText, status: 'propose_solutions' });
+        try {
+            await safeUpdateProblem(problem.id, {
+                verdict_in_progress: true,
+                verdict_requested_by: user?.uid || 'unknown',
+                verdict_requested_at: new Date(),
+            });
+            const analysisText = await getWombatAnalysis(problem);
+            if (analysisText) {
+                await safeUpdateProblem(problem.id, { ai_analysis: analysisText, status: 'propose_solutions', verdict_in_progress: false });
+            } else {
+                await safeUpdateProblem(problem.id, { verdict_in_progress: false });
+            }
+        } catch (error) {
+            await safeUpdateProblem(problem.id, { verdict_in_progress: false }, "AI verdict failed to lock/unlock.");
         }
         setIsAiLoading(null);
-    }, []);
+    }, [safeUpdateProblem, user?.uid]);
 
     useEffect(() => {
         const unsubscribe = onAuthChange(async (currentUser) => {
@@ -84,7 +113,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                         const userData = snap.data();
                         setUser({ uid: currentUser.uid, ...userData });
                         if (userData.partnerId) {
-                            onPartnerSnapshot(userData.partnerId, (partnerSnap) => {
+                            if (partnerUnsubRef.current) {
+                                partnerUnsubRef.current();
+                                partnerUnsubRef.current = null;
+                            }
+                            partnerUnsubRef.current = onPartnerSnapshot(userData.partnerId, (partnerSnap) => {
                                 if (partnerSnap.exists()) {
                                     setPartner({ uid: userData.partnerId, ...partnerSnap.data() });
                                 } else {
@@ -92,6 +125,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                                 }
                             });
                         } else {
+                            if (partnerUnsubRef.current) {
+                                partnerUnsubRef.current();
+                                partnerUnsubRef.current = null;
+                            }
                             setPartner(null);
                         }
                     } else {
@@ -120,7 +157,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             }
             setIsLoading(false);
         });
-        return () => unsubscribe();
+        return () => {
+            if (partnerUnsubRef.current) {
+                partnerUnsubRef.current();
+                partnerUnsubRef.current = null;
+            }
+            unsubscribe();
+        };
     }, []);
 
     useEffect(() => {
@@ -132,7 +175,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                 const updatedCurrent = fetchedProblems.find(p => p.id === currentProblem.id);
                 if (updatedCurrent) {
                     setCurrentProblem(updatedCurrent);
-                    if (updatedCurrent.status === 'ai_review' && !updatedCurrent.ai_analysis && !isAiLoading) {
+                    if (shouldRequestAIAnalysis(updatedCurrent, isAiLoading)) {
                         getAIAnalysis(updatedCurrent);
                     }
                 }
@@ -141,8 +184,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         return () => unsubscribe();
     }, [user?.uid, currentProblem?.id, isAiLoading, currentProblem, getAIAnalysis]);
 
-    const handleUpdate = (problemId, data) => {
-        updateProblem(problemId, data);
+    const handleUpdate = async (problemId, data) => {
+        await safeUpdateProblem(problemId, data);
     };
 
     const handleAgreement = (type: string) => {
@@ -186,11 +229,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             [`${myRole}_translation`]: translationResult || "Translation failed.",
         };
         if (currentProblem[`${partnerRole}_submitted_private`]) updates.status = 'translation';
-        handleUpdate(currentProblem.id, updates);
+        await handleUpdate(currentProblem.id, updates);
         setIsAiLoading(null);
     };
 
-    const handleSteelmanSubmit = (text) => {
+    const handleSteelmanSubmit = async (text) => {
         if (!currentProblem || !user) return;
         const myRole = currentProblem.roles[user.uid];
         const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
@@ -198,10 +241,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         if (currentProblem[`${partnerRole}_submitted_steelman`]) {
             updates.status = 'steelman_approval';
         }
-        handleUpdate(currentProblem.id, updates);
+        await handleUpdate(currentProblem.id, updates);
     };
 
-    const handleProposeSolution = (text) => {
+    const handleProposeSolution = async (text) => {
         if (!currentProblem || !user) return;
         const myRole = currentProblem.roles[user.uid];
         const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
@@ -209,7 +252,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         if (currentProblem[`${partnerRole}_proposed_solution`]) {
             updates.status = 'solution_steelman';
         }
-        handleUpdate(currentProblem.id, updates);
+        await handleUpdate(currentProblem.id, updates);
     };
 
     const handleSolutionSteelmanSubmit = async (text) => {
@@ -237,7 +280,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setIsAiLoading('brainstorm');
         const result = await getBrainstorm(currentProblem);
         if (result) {
-            await updateProblem(currentProblem.id, { brainstormed_solutions: result });
+            await safeUpdateProblem(currentProblem.id, { brainstormed_solutions: result });
         } else {
             setNotification({ show: true, message: "The Wombat's brainstorming circuit is jammed. Try again.", type: 'warning', duration: 4000 });
         }
@@ -279,7 +322,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
         setIsAiLoading('escalate');
         try {
-            await updateProblem(currentProblem.id, {
+            await safeUpdateProblem(currentProblem.id, {
                 escalated_for_human_review: true,
                 human_verdict: currentProblem.human_verdict || "Pending human review.",
             });
