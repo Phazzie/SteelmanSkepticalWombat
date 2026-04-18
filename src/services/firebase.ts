@@ -4,13 +4,27 @@ import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, a
 
 // The Firebase configuration is read from an environment variable.
 // See .env.example for more details.
-const firebaseConfig = JSON.parse(import.meta.env.VITE_FIREBASE_CONFIG || '{}');
+const rawConfig = import.meta.env.VITE_FIREBASE_CONFIG;
+const isTestEnv = import.meta.env.MODE === 'test' || (globalThis as any).vi;
+
+if ((!rawConfig || rawConfig === '{}') && !isTestEnv) {
+    throw new Error("Firebase config missing: set VITE_FIREBASE_CONFIG to a valid JSON string.");
+}
+
+let firebaseConfig = {};
+if (rawConfig) {
+    try {
+        firebaseConfig = JSON.parse(rawConfig);
+    } catch (error) {
+        throw new Error("Firebase config is not valid JSON. Check VITE_FIREBASE_CONFIG.");
+    }
+}
 
 // --- App Initialization ---
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const appId = (globalThis as any).__app_id || 'default-couples-app';
+const appId = import.meta.env.VITE_FIREBASE_APP_ID || 'default-couples-app';
 
 // --- Auth Functions ---
 export const onAuthChange = (callback: (user: User | null) => void) => onAuthStateChanged(auth, callback);
@@ -83,6 +97,9 @@ export const createNewProblem = (user: any, partner: any) => {
         user1_approved_steelman: false,
         user2_approved_steelman: false,
         ai_analysis: '',
+        verdict_in_progress: false,
+        verdict_requested_by: '',
+        verdict_requested_at: null,
         user1_proposed_solution: '',
         user2_proposed_solution: '',
         user1_solution_steelman: '',

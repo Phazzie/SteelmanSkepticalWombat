@@ -48,6 +48,9 @@ export interface Problem {
     ai_analysis: string;
     human_verdict: string;
     escalated_for_human_review?: boolean;
+    verdict_in_progress?: boolean;
+    verdict_requested_by?: string;
+    verdict_requested_at?: FirestoreTimestamp | Date;
     user1_proposed_solution: string;
     user2_proposed_solution: string;
     user1_solution_steelman: string;
