@@ -2,7 +2,6 @@
 node_modules
 npm-debug.log
 yarn-error.log
-package-lock.json
 yarn.lock
 
 # Version control
@@ -60,6 +59,3 @@ circle.yml
 .prettierignore
 .eslintrc.json
 .eslintignore
-tsconfig.json
-vite.config.ts
-vitest.config.ts

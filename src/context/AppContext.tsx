@@ -77,9 +77,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     useEffect(() => {
-        const unsubscribe = onAuthChange(async (currentUser) => {
+        let unsubscribeUserSnapshot: (() => void) | null = null;
+        let unsubscribePartnerSnapshot: (() => void) | null = null;
+
+        const unsubscribeAuth = onAuthChange(async (currentUser) => {
+            // Clean up previous snapshot listeners when auth state changes
+            if (unsubscribeUserSnapshot) {
+                unsubscribeUserSnapshot();
+                unsubscribeUserSnapshot = null;
+            }
+            if (unsubscribePartnerSnapshot) {
+                unsubscribePartnerSnapshot();
+                unsubscribePartnerSnapshot = null;
+            }
+
             if (currentUser) {
-                onUserSnapshot(currentUser.uid, async (snap) => {
+                unsubscribeUserSnapshot = onUserSnapshot(currentUser.uid, async (snap) => {
                     try {
                         if (snap.exists()) {
                             const userData = snap.data();
@@ -89,7 +102,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                             }
                             setUser({ uid: currentUser.uid, ...userData } as User);
                             if (userData.partnerId) {
-                                onPartnerSnapshot(userData.partnerId, (partnerSnap) => {
+                                // Clean up previous partner listener before creating a new one
+                                if (unsubscribePartnerSnapshot) {
+                                    unsubscribePartnerSnapshot();
+                                }
+                                unsubscribePartnerSnapshot = onPartnerSnapshot(userData.partnerId, (partnerSnap) => {
                                     try {
                                         if (partnerSnap.exists()) {
                                             const partnerData = partnerSnap.data();
@@ -166,7 +183,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             }
             setIsLoading(false);
         });
-        return () => unsubscribe();
+        return () => {
+            unsubscribeAuth();
+            if (unsubscribeUserSnapshot) unsubscribeUserSnapshot();
+            if (unsubscribePartnerSnapshot) unsubscribePartnerSnapshot();
+        };
     }, []);
 
     useEffect(() => {
@@ -276,16 +297,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
             const updates = { [`${myRole}_solution_steelman`]: text };
 
+            // Always persist the steelman update first
+            await handleUpdate(currentProblem.id, updates);
+
             if (currentProblem[`${partnerRole}_solution_steelman`]) {
                 setIsAiLoading('wager');
-                const wagerResult = await getWager(currentProblem, text);
-                if(wagerResult) {
-                    updates.wombats_wager = wagerResult;
-                    updates.status = 'wager';
-                    await handleUpdate(currentProblem.id, updates);
+                try {
+                    const wagerResult = await getWager(currentProblem, text);
+                    if (wagerResult) {
+                        await handleUpdate(currentProblem.id, {
+                            wombats_wager: wagerResult,
+                            status: 'wager'
+                        });
+                    }
+                } catch (wagerError) {
+                    console.error('Error generating wager after solution steelman submission:', wagerError);
                 }
-            } else {
-                await handleUpdate(currentProblem.id, updates);
             }
         } catch (error) {
             console.error('Error submitting solution steelman:', error);
@@ -311,10 +338,20 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setNotification,
         signIn: () => anonymousSignIn(),
         signInWithToken: (token: string) => customTokenSignIn(token),
-        invitePartner: (inviteeId: string) => linkPartners(user.uid, inviteeId),
+        invitePartner: (inviteeId: string) => {
+            if (!user) {
+                setNotification({ show: true, message: 'You must be signed in to invite a partner.', type: 'warning', duration: 4000 });
+                return Promise.resolve();
+            }
+            return linkPartners(user.uid, inviteeId);
+        },
         createProblem: () => {},
         setCurrentProblemById: (_id: string) => {},
         startNewProblem: async () => {
+            if (!user || !partner) {
+                setNotification({ show: true, message: 'You must be connected with a partner to start a new problem.', type: 'warning', duration: 4000 });
+                return;
+            }
             try {
                 const docRef = await createNewProblem(user, partner);
                 const docSnap = await getDoc(docRef);
@@ -337,7 +374,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             }
         },
         setCurrentProblem,
-        updateUserName: (newName) => updateUserNameInDb(user.uid, newName),
+        updateUserName: (newName) => {
+            if (!user) {
+                return Promise.reject(new Error('Cannot update user name when no user is signed in.'));
+            }
+            return updateUserNameInDb(user.uid, newName);
+        },
         handleUpdate,
         handleAgreement,
         handleSteelmanApproval,

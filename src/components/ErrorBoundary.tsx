@@ -64,9 +64,11 @@ class ErrorBoundary extends Component<Props, State> {
                         <div className="bg-gray-800 rounded-lg p-4 mb-6 border border-gray-700">
                             <h2 className="text-sm font-bold text-red-400 mb-2">Error Details:</h2>
                             <p className="text-gray-300 text-sm font-mono break-words">
-                                {this.state.error?.toString()}
+                                {import.meta.env.DEV
+                                    ? this.state.error?.toString()
+                                    : 'An unexpected error occurred. Please reload and try again.'}
                             </p>
-                            {this.state.errorInfo && (
+                            {import.meta.env.DEV && this.state.errorInfo && (
                                 <details className="mt-4">
                                     <summary className="text-sm text-gray-400 cursor-pointer hover:text-gray-300">
                                         Stack Trace
