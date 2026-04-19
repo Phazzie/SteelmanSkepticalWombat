@@ -1,6 +1,6 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, User } from 'firebase/auth';
-import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, query, where, DocumentSnapshot, QuerySnapshot } from 'firebase/firestore';
+import { initializeApp, FirebaseApp } from 'firebase/app';
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, User, Auth } from 'firebase/auth';
+import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, query, where, DocumentSnapshot, QuerySnapshot, Firestore, FirestoreError } from 'firebase/firestore';
 import { User as AppUser, Partner, Problem } from '../types';
 
 // The Firebase configuration is read from an environment variable.
@@ -20,12 +20,13 @@ const missingFields = requiredFields.filter(field => !firebaseConfig[field]);
 if (missingFields.length > 0) {
     console.error('Missing required Firebase configuration fields:', missingFields);
     console.error('Please check your .env file and ensure VITE_FIREBASE_CONFIG contains all required fields.');
+    throw new Error(`Missing required Firebase configuration fields: ${missingFields.join(', ')}`);
 }
 
 // --- App Initialization ---
-let app;
-let auth;
-let db;
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
 
 try {
     app = initializeApp(firebaseConfig);
@@ -67,12 +68,12 @@ export const updateUserName = (uid: string, newName: string) => {
     }
 };
 
-export const onUserSnapshot = (uid: string, callback: (doc: DocumentSnapshot) => void, errorCallback?: (error: Error) => void) => {
+export const onUserSnapshot = (uid: string, callback: (doc: DocumentSnapshot) => void, errorCallback?: (error: FirestoreError) => void) => {
     const userDocRef = doc(db, `artifacts/${appId}/users/${uid}`);
     return onSnapshot(userDocRef, callback, errorCallback);
 };
 
-export const onPartnerSnapshot = (partnerId: string, callback: (doc: DocumentSnapshot) => void, errorCallback?: (error: Error) => void) => {
+export const onPartnerSnapshot = (partnerId: string, callback: (doc: DocumentSnapshot) => void, errorCallback?: (error: FirestoreError) => void) => {
     const partnerDocRef = doc(db, `artifacts/${appId}/users/${partnerId}`);
     return onSnapshot(partnerDocRef, callback, errorCallback);
 };
