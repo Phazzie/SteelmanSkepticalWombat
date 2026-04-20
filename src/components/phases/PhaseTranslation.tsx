@@ -4,11 +4,11 @@ interface PhaseTranslationProps {
   problem: Problem;
   onNext: () => void;
   myRole: 'user1' | 'user2';
-  partnerName: string;
+  partnerName?: string;
 }
 
 /** Renders UI for Phase 3: The Wombat's Translation */
-const PhaseTranslation = ({ problem, onNext, myRole, partnerName }: PhaseTranslationProps) => {
+const PhaseTranslation = ({ problem, onNext, myRole, partnerName = 'Your Partner' }: PhaseTranslationProps) => {
     const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
     return (
         <div>
