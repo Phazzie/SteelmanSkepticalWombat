@@ -11,7 +11,7 @@ interface PhaseSteelmanProps {
     onSave: (problemId: string, data: { [key: string]: string }) => void;
     onSubmit: () => void;
     myRole: 'user1' | 'user2';
-    isAiLoading: boolean | string;
+    isAiLoading: string | null;
 }
 
 /**

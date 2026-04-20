@@ -22,17 +22,17 @@ import {
     getBrainstorm,
     getCritique,
 } from '../services/ai';
-import { Problem } from '../types';
+import { Problem, UserProfile } from '../types';
 
 interface AppContextType {
-    user: any;
-    partner: any;
-    problems: any[];
-    currentProblem: any;
+    user: UserProfile | null;
+    partner: UserProfile | null;
+    problems: Problem[];
+    currentProblem: Problem | null;
     isLoading: boolean;
-    isAiLoading: any;
-    notification: any;
-    setNotification: (notification: any) => void;
+    isAiLoading: string | null;
+    notification: { show: boolean; message: string; type: string; duration: number };
+    setNotification: (notification: { show: boolean; message: string; type: string; duration: number }) => void;
     signIn: () => void;
     signInWithToken: (token: string) => void;
     invitePartner: (inviteeId: string) => void;
@@ -59,8 +59,8 @@ interface AppContextType {
 export const AppContext = createContext<AppContextType | null>(null);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-    const [user, setUser] = useState<any>(null);
-    const [partner, setPartner] = useState<any>(null);
+    const [user, setUser] = useState<UserProfile | null>(null);
+    const [partner, setPartner] = useState<UserProfile | null>(null);
     const [problems, setProblems] = useState<Problem[]>([]);
     const [currentProblem, setCurrentProblem] = useState<Problem | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -314,7 +314,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setNotification,
         signIn: () => anonymousSignIn(),
         signInWithToken: (token: string) => customTokenSignIn(token),
-        invitePartner: (inviteeId: string) => linkPartners(user.uid, inviteeId),
+        invitePartner: (inviteeId: string) => {
+            if (!user) return;
+            linkPartners(user.uid, inviteeId);
+        },
         createProblem: async () => {
             if (!user || !partner) return;
             const docRef = await createNewProblem(user, partner);
@@ -326,12 +329,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             if (selected) setCurrentProblem(selected);
         },
         startNewProblem: async () => {
+            if (!user || !partner) return;
             const docRef = await createNewProblem(user, partner);
             const newProblem = { id: docRef.id, ...(await getDoc(docRef)).data() } as Problem;
             setCurrentProblem(newProblem)
         },
         setCurrentProblem,
-        updateUserName: (newName: string) => updateUserNameInDb(user.uid, newName),
+        updateUserName: (newName: string) => {
+            if (!user) return;
+            updateUserNameInDb(user.uid, newName);
+        },
         handleUpdate,
         handleAgreement,
         handleSteelmanApproval,

@@ -7,7 +7,7 @@ interface PhaseSolutionProps {
   onAgree: (arg: string) => void;
   onBrainstorm: () => void;
   myRole: 'user1' | 'user2';
-  isAiLoading: boolean | string;
+  isAiLoading: string | null;
 }
 
 /** Renders UI for Phase 10: Collaborating on a final solution. */

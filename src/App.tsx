@@ -71,7 +71,7 @@ const MainApp = () => {
     };
 
     const renderPhase = () => {
-        if (!currentProblem) return (
+        if (!currentProblem || !user || !currentProblem.roles) return (
              <div className="text-center p-8 sm:p-12 bg-gray-900 rounded-xl shadow-2xl flex flex-col items-center justify-center h-full border-2 border-dashed border-gray-700">
                 <WombatAvatar className="w-32 h-32 mb-4" />
                 <h2 className="text-2xl font-serif text-white">How The Wombat Works</h2>
@@ -134,8 +134,8 @@ const MainApp = () => {
 
         return (
             <div className="bg-gray-900 p-4 sm:p-6 rounded-xl shadow-2xl border border-gray-700">
-                <ProgressBar status={currentProblem.status} />
-                <ErrorBoundary section={currentProblem.status}>
+                <ProgressBar status={currentProblem.status || 'agree_statement'} />
+                <ErrorBoundary section={currentProblem.status || 'unknown'}>
                     {phaseComponent}
                 </ErrorBoundary>
             </div>
@@ -211,7 +211,7 @@ const MainApp = () => {
                                             <p className="font-semibold truncate text-white">
                                                 {p.problem_statement || `Problem from ${getProblemDateLabel(p)}`}
                                             </p>
-                                            <span className={`text-xs font-medium px-2 py-1 rounded-full ${ p.status === 'resolved' ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'}`}>{p.status.replace(/_/g, ' ')}</span>
+                                            <span className={`text-xs font-medium px-2 py-1 rounded-full ${ p.status === 'resolved' ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'}`}>{(p.status || 'unknown').replace(/_/g, ' ')}</span>
                                         </div>
                                     ))}
                                     {activeTab === 'trophy' && problems.filter(p=>p.status === 'resolved').length === 0 &&

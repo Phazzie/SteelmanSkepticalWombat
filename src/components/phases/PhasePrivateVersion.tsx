@@ -6,7 +6,7 @@ interface PhasePrivateVersionProps {
   onSave: (id: string, updates: Record<string, unknown>) => void;
   onSubmit: (text: string) => void | Promise<void>;
   myRole: 'user1' | 'user2';
-  isAiLoading: boolean | string;
+  isAiLoading: string | null;
 }
 
 /** Renders UI for Phase 2: Stating private versions of the problem. */

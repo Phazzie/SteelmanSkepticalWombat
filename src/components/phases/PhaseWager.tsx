@@ -3,7 +3,7 @@ import { Problem } from '../../types';
 interface PhaseWagerProps {
   problem: Problem;
   onNext: () => void;
-  isAiLoading: boolean | string;
+  isAiLoading: string | null;
 }
 
 /** Renders UI for Phase 9: The Wombat's Wager */
