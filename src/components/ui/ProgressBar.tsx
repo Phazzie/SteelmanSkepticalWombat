@@ -1,4 +1,3 @@
-import React from 'react';
 
 const PHASE_LABELS: Record<string, string> = {
     agree_statement: 'Define',
