@@ -129,7 +129,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             const fetchedProblems = querySnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })).sort((a: any, b: any) => b.createdAt.seconds - a.createdAt.seconds);
             setProblems(fetchedProblems);
             if (currentProblem) {
-                const updatedCurrent = fetchedProblems.find(p => p.id === currentProblem.id);
+                const updatedCurrent = fetchedProblems.find((p: any) => p.id === currentProblem.id);
                 if (updatedCurrent) {
                     setCurrentProblem(updatedCurrent);
                     if (updatedCurrent.status === 'ai_review' && !updatedCurrent.ai_analysis && !isAiLoading) {
@@ -318,7 +318,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         createProblem: async () => {
             if (!user || !partner) return;
             const docRef = await createNewProblem(user, partner);
-            const newProblem = { id: docRef.id, ...(await getDoc(docRef)).data() };
+            const newProblem = { id: docRef.id, ...(await getDoc(docRef)).data() } as Problem;
             setCurrentProblem(newProblem);
         },
         setCurrentProblemById: (id: string) => {
@@ -327,11 +327,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         },
         startNewProblem: async () => {
             const docRef = await createNewProblem(user, partner);
-            const newProblem = { id: docRef.id, ...(await getDoc(docRef)).data() };
+            const newProblem = { id: docRef.id, ...(await getDoc(docRef)).data() } as Problem;
             setCurrentProblem(newProblem)
         },
         setCurrentProblem,
-        updateUserName: (newName) => updateUserNameInDb(user.uid, newName),
+        updateUserName: (newName: string) => updateUserNameInDb(user.uid, newName),
         handleUpdate,
         handleAgreement,
         handleSteelmanApproval,
@@ -343,7 +343,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         handleCritique,
         handleGenerateImage,
         handleEscalate,
-        handleBSMeter: async (text) => {
+        handleBSMeter: async (text: string) => {
             setIsAiLoading('bs-meter');
             const result = await getBSAnalysis(text);
             setNotification({ show: true, message: result || "The Wombat is speechless.", type: 'info', duration: 4000 });
