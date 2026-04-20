@@ -1,8 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import DraftTextarea from '../ui/DraftTextarea';
+import { Problem } from '../../types';
+
+interface PhaseSolutionSteelmanProps {
+  problem: Problem;
+  onSave: (id: string, updates: Record<string, unknown>) => void;
+  onSubmit: (text: string) => void;
+  myRole: 'user1' | 'user2';
+  partnerName: string;
+}
 
 /** Renders UI for the new Phase 8: Steelmanning the partner's proposed solution. */
-const PhaseSolutionSteelman = ({ problem, onSave, onSubmit, myRole, partnerName }) => {
+const PhaseSolutionSteelman = ({ problem, onSave, onSubmit, myRole, partnerName }: PhaseSolutionSteelmanProps) => {
     const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
     const partnerSolution = problem[`${partnerRole}_proposed_solution`];
     const mySteelman = problem[`${myRole}_solution_steelman`] || '';

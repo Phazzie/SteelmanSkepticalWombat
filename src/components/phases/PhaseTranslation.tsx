@@ -1,7 +1,14 @@
-import React from 'react';
+import { Problem } from '../../types';
+
+interface PhaseTranslationProps {
+  problem: Problem;
+  onNext: () => void;
+  myRole: 'user1' | 'user2';
+  partnerName: string;
+}
 
 /** Renders UI for Phase 3: The Wombat's Translation */
-const PhaseTranslation = ({ problem, onNext, myRole, partnerName }) => {
+const PhaseTranslation = ({ problem, onNext, myRole, partnerName }: PhaseTranslationProps) => {
     const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
     return (
         <div>

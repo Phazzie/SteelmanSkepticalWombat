@@ -174,7 +174,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         handleUpdate(currentProblem.id, updates);
     };
 
-    const handlePrivateSubmit = async (text) => {
+    const handlePrivateSubmit = async (text: string) => {
         if (!currentProblem || !user) return;
         setIsAiLoading('translation');
         const myRole = currentProblem.roles[user.uid];
@@ -190,7 +190,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setIsAiLoading(null);
     };
 
-    const handleSteelmanSubmit = (text) => {
+    const handleSteelmanSubmit = (text: string) => {
         if (!currentProblem || !user) return;
         const myRole = currentProblem.roles[user.uid];
         const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
@@ -201,7 +201,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         handleUpdate(currentProblem.id, updates);
     };
 
-    const handleProposeSolution = (text) => {
+    const handleProposeSolution = (text: string) => {
         if (!currentProblem || !user) return;
         const myRole = currentProblem.roles[user.uid];
         const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
@@ -212,7 +212,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         handleUpdate(currentProblem.id, updates);
     };
 
-    const handleSolutionSteelmanSubmit = async (text) => {
+    const handleSolutionSteelmanSubmit = async (text: string) => {
         if (!currentProblem || !user) return;
         const myRole = currentProblem.roles[user.uid];
         const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
