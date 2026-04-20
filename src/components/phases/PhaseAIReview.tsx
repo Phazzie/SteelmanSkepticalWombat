@@ -10,7 +10,7 @@ interface PhaseAIReviewProps {
     problem: Problem;
     onNext: () => void;
     onEscalate: () => void;
-    isAiLoading: boolean | string;
+    isAiLoading: string | null;
 }
 
 /**

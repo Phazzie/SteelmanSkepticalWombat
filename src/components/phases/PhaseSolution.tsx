@@ -1,7 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { Problem } from '../../types';
+
+interface PhaseSolutionProps {
+  problem: Problem;
+  onUpdate: (id: string, updates: Record<string, unknown>) => void;
+  onAgree: (arg: string) => void;
+  onBrainstorm: () => void;
+  myRole: 'user1' | 'user2';
+  isAiLoading: string | null;
+}
 
 /** Renders UI for Phase 10: Collaborating on a final solution. */
-const PhaseSolution = ({ problem, onUpdate, onAgree, onBrainstorm, myRole, isAiLoading }) => {
+const PhaseSolution = ({ problem, onUpdate, onAgree, onBrainstorm, myRole, isAiLoading }: PhaseSolutionProps) => {
     const iHaveAgreed = problem[`${myRole}_agreed_solution`];
     const partnerHasAgreed = problem[`${myRole === 'user1' ? 'user2' : 'user1'}_agreed_solution`];
 

@@ -1,8 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import DraftTextarea from '../ui/DraftTextarea';
+import { Problem } from '../../types';
+
+interface PhaseProposeSolutionsProps {
+  problem: Problem;
+  onSave: (id: string, updates: Record<string, unknown>) => void;
+  onSubmit: (text: string) => void;
+  myRole: 'user1' | 'user2';
+}
 
 /** Renders UI for Phase 7: Proposing individual solutions. */
-const PhaseProposeSolutions = ({ problem, onSave, onSubmit, myRole }) => {
+const PhaseProposeSolutions = ({ problem, onSave, onSubmit, myRole }: PhaseProposeSolutionsProps) => {
     const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
     const proposedSolution = problem[`${myRole}_proposed_solution`] || '';
     const iHaveProposed = !!proposedSolution;

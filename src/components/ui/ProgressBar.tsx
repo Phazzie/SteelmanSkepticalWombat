@@ -1,4 +1,3 @@
-import React from 'react';
 
 const PHASE_LABELS: Record<string, string> = {
     agree_statement: 'Define',
@@ -19,7 +18,7 @@ const PHASE_LABELS: Record<string, string> = {
  * @param {{status: string}} props - The current status of the problem.
  * @returns {JSX.Element}
  */
-const ProgressBar = ({ status }) => {
+const ProgressBar = ({ status }: { status: string }) => {
     const phases = Object.keys(PHASE_LABELS);
     const currentPhaseIndex = phases.indexOf(status);
     return (

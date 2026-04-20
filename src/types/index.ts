@@ -9,6 +9,16 @@ export interface FirestoreTimestamp {
 }
 
 /**
+ * User profile shape as stored and retrieved from Firestore.
+ */
+export interface UserProfile {
+    uid: string;
+    name?: string;
+    partnerId?: string;
+    [key: string]: unknown;
+}
+
+/**
  * Safely converts a FirestoreTimestamp or plain Date to a JavaScript Date object.
  */
 const isFirestoreTimestamp = (value: unknown): value is FirestoreTimestamp => {

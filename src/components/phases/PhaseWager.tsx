@@ -1,7 +1,13 @@
-import React from 'react';
+import { Problem } from '../../types';
+
+interface PhaseWagerProps {
+  problem: Problem;
+  onNext: () => void;
+  isAiLoading: string | null;
+}
 
 /** Renders UI for Phase 9: The Wombat's Wager */
-const PhaseWager = ({ problem, onNext, isAiLoading }) => (
+const PhaseWager = ({ problem, onNext, isAiLoading }: PhaseWagerProps) => (
     <div className="text-center">
         <h3 className="text-2xl font-serif text-white mb-2">Phase 9: The Wombat's Wager</h3>
         <p className="text-gray-400 mb-4">The Wombat has reviewed both proposals and how well you understood them. It has now placed its bet. Consider this before creating your final plan.</p>

@@ -1,12 +1,19 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { WOMBAT_THINKING_URL } from '../../constants';
 
-/**
- * A component to display temporary notifications.
- * @param {{notification: object, onDismiss: function}} props - Notification object and dismiss handler.
- * @returns {JSX.Element|null}
- */
-const Notification = ({ notification, onDismiss }) => {
+interface NotificationMessage {
+  show: boolean;
+  message: string;
+  type: string;
+  duration?: number;
+}
+
+interface NotificationProps {
+  notification: NotificationMessage;
+  onDismiss: () => void;
+}
+
+const Notification = ({ notification, onDismiss }: NotificationProps) => {
     useEffect(() => {
         if (notification.show) {
             const timer = setTimeout(() => {

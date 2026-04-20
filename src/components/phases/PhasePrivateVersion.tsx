@@ -1,10 +1,22 @@
-import React from 'react';
 import DraftTextarea from '../ui/DraftTextarea';
+import { Problem } from '../../types';
+
+interface PhasePrivateVersionProps {
+  problem: Problem;
+  onSave: (id: string, updates: Record<string, unknown>) => void;
+  onSubmit: (text: string) => void | Promise<void>;
+  myRole: 'user1' | 'user2';
+  isAiLoading: string | null;
+}
 
 /** Renders UI for Phase 2: Stating private versions of the problem. */
-const PhasePrivateVersion = ({ problem, onSave, onSubmit, myRole, isAiLoading }) => {
+const PhasePrivateVersion = ({ problem, onSave, onSubmit, myRole, isAiLoading }: PhasePrivateVersionProps) => {
     const iHaveSubmitted = problem[`${myRole}_submitted_private`];
     const partnerHasSubmitted = problem[`${myRole === 'user1' ? 'user2' : 'user1'}_submitted_private`];
+    const handleSubmit = () => {
+        const text = problem[`${myRole}_private_version`];
+        onSubmit(text);
+    };
     return (
         <div>
             <h3 className="text-2xl font-serif text-white mb-2">Phase 2: State Your Case (Privately)</h3>
@@ -13,7 +25,7 @@ const PhasePrivateVersion = ({ problem, onSave, onSubmit, myRole, isAiLoading })
                 value={problem[`${myRole}_private_version`]}
                 onChange={() => {}} // No-op since we save on blur
                 onSave={(text) => onSave(problem.id, { [`${myRole}_private_version`]: text })}
-                onSubmit={onSubmit}
+                onSubmit={handleSubmit}
                 placeholder="From my point of view, the issue is..."
                 disabled={iHaveSubmitted || !!isAiLoading}
             />

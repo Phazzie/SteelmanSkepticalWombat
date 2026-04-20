@@ -1,7 +1,14 @@
-import React from 'react';
+import { Problem } from '../../types';
+
+interface PhaseSteelmanApprovalProps {
+  problem: Problem;
+  onApprove: () => void;
+  myRole: 'user1' | 'user2';
+  partnerName: string;
+}
 
 /** Renders UI for Phase 5: Approving the partner's steelman. */
-const PhaseSteelmanApproval = ({ problem, onApprove, myRole, partnerName }) => {
+const PhaseSteelmanApproval = ({ problem, onApprove, myRole, partnerName }: PhaseSteelmanApprovalProps) => {
     const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
     const steelmanOfMyView = problem[`${partnerRole}_steelman`];
     const iHaveApproved = problem[`${myRole}_approved_steelman`];

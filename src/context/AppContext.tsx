@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import {
     onAuthChange,
     anonymousSignIn,
@@ -22,17 +22,17 @@ import {
     getBrainstorm,
     getCritique,
 } from '../services/ai';
-import { Problem } from '../types';
+import { Problem, UserProfile } from '../types';
 
 interface AppContextType {
-    user: any;
-    partner: any;
-    problems: any[];
-    currentProblem: any;
+    user: UserProfile | null;
+    partner: UserProfile | null;
+    problems: Problem[];
+    currentProblem: Problem | null;
     isLoading: boolean;
-    isAiLoading: any;
-    notification: any;
-    setNotification: (notification: any) => void;
+    isAiLoading: string | null;
+    notification: { show: boolean; message: string; type: string; duration: number };
+    setNotification: (notification: { show: boolean; message: string; type: string; duration: number }) => void;
     signIn: () => void;
     signInWithToken: (token: string) => void;
     invitePartner: (inviteeId: string) => void;
@@ -59,15 +59,15 @@ interface AppContextType {
 export const AppContext = createContext<AppContextType | null>(null);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-    const [user, setUser] = useState(null);
-    const [partner, setPartner] = useState(null);
-    const [problems, setProblems] = useState([]);
-    const [currentProblem, setCurrentProblem] = useState(null);
+    const [user, setUser] = useState<UserProfile | null>(null);
+    const [partner, setPartner] = useState<UserProfile | null>(null);
+    const [problems, setProblems] = useState<Problem[]>([]);
+    const [currentProblem, setCurrentProblem] = useState<Problem | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [isAiLoading, setIsAiLoading] = useState(null);
+    const [isAiLoading, setIsAiLoading] = useState<string | null>(null);
     const [notification, setNotification] = useState({ show: false, message: '', type: 'info', duration: 4000 });
 
-    const getAIAnalysis = useCallback(async (problem) => {
+    const getAIAnalysis = useCallback(async (problem: Problem) => {
         setIsAiLoading('verdict');
         const analysisText = await getWombatAnalysis(problem);
         if (analysisText) {
@@ -126,10 +126,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         if (!user?.uid) return;
         const unsubscribe = onProblemsSnapshot(user.uid, (querySnapshot) => {
-            const fetchedProblems = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+            const fetchedProblems = querySnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })).sort((a: any, b: any) => b.createdAt.seconds - a.createdAt.seconds);
             setProblems(fetchedProblems);
             if (currentProblem) {
-                const updatedCurrent = fetchedProblems.find(p => p.id === currentProblem.id);
+                const updatedCurrent = fetchedProblems.find((p: any) => p.id === currentProblem.id);
                 if (updatedCurrent) {
                     setCurrentProblem(updatedCurrent);
                     if (updatedCurrent.status === 'ai_review' && !updatedCurrent.ai_analysis && !isAiLoading) {
@@ -141,12 +141,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         return () => unsubscribe();
     }, [user?.uid, currentProblem?.id, isAiLoading, currentProblem, getAIAnalysis]);
 
-    const handleUpdate = (problemId, data) => {
+    const handleUpdate = (problemId: string, data: Record<string, unknown>) => {
         updateProblem(problemId, data);
     };
 
     const handleAgreement = (type: string) => {
-        if (!currentProblem || !user) return;
+        if (!currentProblem || !user || !currentProblem.roles) return;
         const myRole = currentProblem.roles[user.uid];
         const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
         if (type === 'problem') {
@@ -164,7 +164,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const handleSteelmanApproval = () => {
-        if (!currentProblem || !user) return;
+        if (!currentProblem || !user || !currentProblem.roles) return;
         const myRole = currentProblem.roles[user.uid];
         const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
         const updates: any = { [`${myRole}_approved_steelman`]: true };
@@ -174,8 +174,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         handleUpdate(currentProblem.id, updates);
     };
 
-    const handlePrivateSubmit = async (text) => {
-        if (!currentProblem || !user) return;
+    const handlePrivateSubmit = async (text: string) => {
+        if (!currentProblem || !user || !currentProblem.roles) return;
         setIsAiLoading('translation');
         const myRole = currentProblem.roles[user.uid];
         const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
@@ -190,8 +190,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setIsAiLoading(null);
     };
 
-    const handleSteelmanSubmit = (text) => {
-        if (!currentProblem || !user) return;
+    const handleSteelmanSubmit = (text: string) => {
+        if (!currentProblem || !user || !currentProblem.roles) return;
         const myRole = currentProblem.roles[user.uid];
         const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
         const updates = { [`${myRole}_steelman`]: text, [`${myRole}_submitted_steelman`]: true };
@@ -201,8 +201,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         handleUpdate(currentProblem.id, updates);
     };
 
-    const handleProposeSolution = (text) => {
-        if (!currentProblem || !user) return;
+    const handleProposeSolution = (text: string) => {
+        if (!currentProblem || !user || !currentProblem.roles) return;
         const myRole = currentProblem.roles[user.uid];
         const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
         const updates = { [`${myRole}_proposed_solution`]: text };
@@ -212,8 +212,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         handleUpdate(currentProblem.id, updates);
     };
 
-    const handleSolutionSteelmanSubmit = async (text) => {
-        if (!currentProblem || !user) return;
+    const handleSolutionSteelmanSubmit = async (text: string) => {
+        if (!currentProblem || !user || !currentProblem.roles) return;
         const myRole = currentProblem.roles[user.uid];
         const partnerRole = myRole === 'user1' ? 'user2' : 'user1';
         const updates = { [`${myRole}_solution_steelman`]: text };
@@ -314,11 +314,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setNotification,
         signIn: () => anonymousSignIn(),
         signInWithToken: (token: string) => customTokenSignIn(token),
-        invitePartner: (inviteeId: string) => linkPartners(user.uid, inviteeId),
+        invitePartner: (inviteeId: string) => {
+            if (!user) return;
+            linkPartners(user.uid, inviteeId);
+        },
         createProblem: async () => {
             if (!user || !partner) return;
             const docRef = await createNewProblem(user, partner);
-            const newProblem = { id: docRef.id, ...(await getDoc(docRef)).data() };
+            const newProblem = { id: docRef.id, ...(await getDoc(docRef)).data() } as Problem;
             setCurrentProblem(newProblem);
         },
         setCurrentProblemById: (id: string) => {
@@ -326,12 +329,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             if (selected) setCurrentProblem(selected);
         },
         startNewProblem: async () => {
+            if (!user || !partner) return;
             const docRef = await createNewProblem(user, partner);
-            const newProblem = { id: docRef.id, ...(await getDoc(docRef)).data() };
+            const newProblem = { id: docRef.id, ...(await getDoc(docRef)).data() } as Problem;
             setCurrentProblem(newProblem)
         },
         setCurrentProblem,
-        updateUserName: (newName) => updateUserNameInDb(user.uid, newName),
+        updateUserName: (newName: string) => {
+            if (!user) return;
+            updateUserNameInDb(user.uid, newName);
+        },
         handleUpdate,
         handleAgreement,
         handleSteelmanApproval,
@@ -343,7 +350,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         handleCritique,
         handleGenerateImage,
         handleEscalate,
-        handleBSMeter: async (text) => {
+        handleBSMeter: async (text: string) => {
             setIsAiLoading('bs-meter');
             const result = await getBSAnalysis(text);
             setNotification({ show: true, message: result || "The Wombat is speechless.", type: 'info', duration: 4000 });

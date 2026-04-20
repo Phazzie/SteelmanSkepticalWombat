@@ -1,4 +1,3 @@
-import React from 'react';
 import { WOMBAT_AVATAR_URL } from '../../constants';
 
 /**
