@@ -13,7 +13,7 @@
   },
   "plugins": ["react-refresh", "@typescript-eslint", "react-hooks"],
   "rules": {
-    "no-console": ["warn", { "allow": ["warn", "error"] }],
+    "no-console": ["error", { "allow": ["warn", "error"] }],
     "react-refresh/only-export-components": [
       "warn",
       { "allowConstantExport": true, "allowExportNames": ["AppProvider"] }
