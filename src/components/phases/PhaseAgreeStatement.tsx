@@ -1,7 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { Problem } from '../../types';
+
+interface PhaseAgreeStatementProps {
+  problem: Problem;
+  onUpdate: (id: string, updates: Record<string, unknown>) => void;
+  onAgree: (arg: string) => void;
+  myRole: 'user1' | 'user2';
+}
 
 /** Renders UI for Phase 1: Agreeing on a problem statement. */
-const PhaseAgreeStatement = ({ problem, onUpdate, onAgree, myRole }) => {
+const PhaseAgreeStatement = ({ problem, onUpdate, onAgree, myRole }: PhaseAgreeStatementProps) => {
     const iHaveAgreed = problem[`${myRole}_agreed_problem`];
     const partnerHasAgreed = problem[`${myRole === 'user1' ? 'user2' : 'user1'}_agreed_problem`];
 

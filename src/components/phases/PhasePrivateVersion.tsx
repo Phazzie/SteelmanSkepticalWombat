@@ -1,8 +1,16 @@
-import React from 'react';
 import DraftTextarea from '../ui/DraftTextarea';
+import { Problem } from '../../types';
+
+interface PhasePrivateVersionProps {
+  problem: Problem;
+  onSave: (id: string, updates: Record<string, unknown>) => void;
+  onSubmit: (role: string) => Promise<void>;
+  myRole: 'user1' | 'user2';
+  isAiLoading: boolean | string;
+}
 
 /** Renders UI for Phase 2: Stating private versions of the problem. */
-const PhasePrivateVersion = ({ problem, onSave, onSubmit, myRole, isAiLoading }) => {
+const PhasePrivateVersion = ({ problem, onSave, onSubmit, myRole, isAiLoading }: PhasePrivateVersionProps) => {
     const iHaveSubmitted = problem[`${myRole}_submitted_private`];
     const partnerHasSubmitted = problem[`${myRole === 'user1' ? 'user2' : 'user1'}_submitted_private`];
     return (
