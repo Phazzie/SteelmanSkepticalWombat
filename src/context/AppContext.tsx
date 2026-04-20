@@ -59,15 +59,15 @@ interface AppContextType {
 export const AppContext = createContext<AppContextType | null>(null);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-    const [user, setUser] = useState(null);
-    const [partner, setPartner] = useState(null);
-    const [problems, setProblems] = useState([]);
-    const [currentProblem, setCurrentProblem] = useState(null);
+    const [user, setUser] = useState<any>(null);
+    const [partner, setPartner] = useState<any>(null);
+    const [problems, setProblems] = useState<Problem[]>([]);
+    const [currentProblem, setCurrentProblem] = useState<Problem | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [isAiLoading, setIsAiLoading] = useState(null);
+    const [isAiLoading, setIsAiLoading] = useState<string | null>(null);
     const [notification, setNotification] = useState({ show: false, message: '', type: 'info', duration: 4000 });
 
-    const getAIAnalysis = useCallback(async (problem) => {
+    const getAIAnalysis = useCallback(async (problem: Problem) => {
         setIsAiLoading('verdict');
         const analysisText = await getWombatAnalysis(problem);
         if (analysisText) {
@@ -141,7 +141,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         return () => unsubscribe();
     }, [user?.uid, currentProblem?.id, isAiLoading, currentProblem, getAIAnalysis]);
 
-    const handleUpdate = (problemId, data) => {
+    const handleUpdate = (problemId: string, data: Record<string, unknown>) => {
         updateProblem(problemId, data);
     };
 
