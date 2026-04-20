@@ -4,7 +4,7 @@ import { Problem } from '../../types';
 interface PhasePrivateVersionProps {
   problem: Problem;
   onSave: (id: string, updates: Record<string, unknown>) => void;
-  onSubmit: (text: string) => Promise<void>;
+  onSubmit: () => void | Promise<void>;
   myRole: 'user1' | 'user2';
   isAiLoading: boolean | string;
 }
