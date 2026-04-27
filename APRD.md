@@ -3,7 +3,7 @@
 
 **Last Updated:** April 27, 2026  
 **Status:** Beta Ready (Security & Quality Issues Required Before Public Launch)  
-**Total Estimated Work:** ~90 hours (4-5 weeks at 20-25 h/week: ~19.5h Phase 1, ~27h Phase 2, ~43.5h Phase 3)
+**Total Estimated Work:** ~75 hours core phases (4 weeks at 20-25 h/week) + ~15h optional hardening = 90h total
 
 ---
 
@@ -29,11 +29,11 @@ These must be fixed before any users access the app.
 
 ### SEC-01: Gemini API Key Exposed in Client Bundle
 **Severity:** 🔴 CRITICAL  
-**File:** `src/services/ai.ts:29`  
+**File:** `src/services/ai.ts`  
 **Problem:**
 ```typescript
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;  // Exposed to browser
-const response = await fetch(apiUrl + `?key=${apiKey}`);  // Sent in URL
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;  // Exposed in browser
+// Key sent to Gemini API, accessible via DevTools/Network tab
 ```
 **Impact:** Anyone can intercept API key, drain quota, incur charges  
 **Solution:** Move to backend proxy  
@@ -45,20 +45,20 @@ const response = await fetch(apiUrl + `?key=${apiKey}`);  // Sent in URL
 
 ---
 
-### SEC-02: Firebase API Key Not Domain-Restricted
-**Severity:** 🟡 HIGH  
+### SEC-02: Firebase API Key Not Domain-Restricted (Abuse Reduction)
+**Severity:** 🟢 LOW  
 **File:** `src/services/firebase.ts:7`  
 **Problem:**
 ```typescript
 const firebaseConfig = JSON.parse(import.meta.env.VITE_FIREBASE_CONFIG || '{}');
-// VITE_FIREBASE_CONFIG = {"apiKey": "AIzaSy...", ...}
-// API key is valid for ANY domain (no HTTP referrer restriction)
+// API key is public (intentional in Firebase client SDK model)
+// But has no domain/API restrictions—can be used from any origin
 ```
-**Impact:** If API key leaks, it can be used from any malicious website; attackers can query Firebase with this key  
-**Solution:** Restrict API key to your domain(s) in Firebase Console
+**Impact:** **Note:** The Web API key is *intended to be public* in Firebase's security model. Real security comes from Firestore RLS + Auth. However, unrestricted keys can be abused to trigger quota DoS or API usage spikes. Domain/API restrictions are a defense-in-depth measure.  
+**Solution:** Add domain and API restrictions in Firebase Console
 1. Go to Firebase Console → Project Settings → API Keys
 2. Edit the web API key
-3. Set "Application restrictions" to "HTTP referrers" 
+3. Set "Application restrictions" to "HTTP referrers"
 4. Add your domain(s): `skepticalwombat.example.com`, `localhost`
 5. Restrict "API restrictions" to: Firestore API, Authentication API only
 **Effort:** 0.5 hours (Firebase console configuration)
@@ -425,15 +425,15 @@ dispatch({ type: 'SUBMIT_PRIVATE_VERSION', payload: { text, translation } });
 
 ### ARCH-02: LangChain Partial Integration
 **Severity:** 🟡 MEDIUM  
-**File:** `src/services/ai.ts:10-18`  
+**File:** `src/services/ai.ts`  
 **Problem:**
 ```typescript
-const { ChatGoogleGenerativeAI } = require("@langchain/google-genai");  // CommonJS in ESM
-useLangChain = true;  // Flag set but incomplete implementation
-// Uses ~100KB of LangChain but only for `invoke()` wrapper
+const useLangChain = import.meta.env.VITE_USE_LANGCHAIN === 'true';
+// Conditionally imports @langchain/google-genai (~100KB)
+// But only uses invoke() wrapper—chains/memory/agents unused
 ```
-**Impact:** Dead code, bundle bloat, ESM/CJS compatibility issues  
-**Solution:** Either (A) remove LangChain, or (B) fully integrate for chains/memory  
+**Impact:** Dead code, unused bundle bloat (~100KB); LangChain feature-set is not leveraged  
+**Solution:** Either (A) remove LangChain dependency entirely, or (B) fully integrate for chains/memory/RAG use cases  
 **Effort:** 1 hour (remove) or 8 hours (integrate properly)
 
 ---
@@ -605,15 +605,16 @@ test('PhasePrivateVersion renders textarea', () => {
 
 ## 6. PRIORITIZED ACTION PLAN 🚀
 
-### Phase 1: Ship-Blockers (1 week, ~22 hours) 🚨
+### Phase 1: Ship-Blockers (1 week, ~21 hours) 🚨
 **Goal:** Make the app safe to deploy to beta testers
 
 1. **SEC-03** (3h): Add Firestore security rules
-2. **SEC-01 + SEC-02** (8h): Move API keys to backend proxy
-3. **SEC-04** (0.5h): Disable sourcemaps in production
-4. **ARCH-04** (2h): Add error boundaries
-5. **SEC-05** (2h): Add invite link expiry
-6. **SEC-06** (4h): Implement rate limiting
+2. **SEC-01** (8h): Move Gemini API key to backend proxy
+3. **SEC-02** (0.5h): Add Firebase API key domain/API restrictions
+4. **SEC-04** (0.5h): Disable sourcemaps in production
+5. **ARCH-04** (2h): Add error boundaries
+6. **SEC-05** (3h): Server-enforce invite link expiry & one-time use
+7. **SEC-06** (4h): Backend rate limiting on AI API calls
 
 **Dependencies:** None (can start immediately)  
 **Testing:** Manual smoke test of full workflow  
@@ -621,7 +622,7 @@ test('PhasePrivateVersion renders textarea', () => {
 
 ---
 
-### Phase 2: Quality & Correctness (1-2 weeks, ~25 hours) ⚙️
+### Phase 2: Quality & Correctness (1-2 weeks, ~24 hours) ⚙️
 **Goal:** Make the codebase maintainable and extensible
 
 1. **ARCH-01** (4h): Wire state machine reducer into AppContext
@@ -664,10 +665,12 @@ test('PhasePrivateVersion renders textarea', () => {
 | **TOTAL** | **31** | **90h** |
 
 **Timeline:**
-- Phase 1 (Ship-blockers): 1 week (focused dev)
-- Phase 2 (Quality): 1-2 weeks
-- Phase 3 (Hardening): 2 weeks
-- **Total: 4-7 weeks to production-ready**
+- Phase 1 (Ship-blockers): 1 week (~21h)
+- Phase 2 (Quality): 1 week (~24h)
+- Phase 3 (Hardening): 1-2 weeks (~30h)
+- **Core Phases: 4 weeks at 20-25 h/week to reach beta-ready**
+- **Optional hardening (missing 15h): 1 additional week for full polish**
+- **Total: 4-5 weeks to production-ready**
 
 ---
 
