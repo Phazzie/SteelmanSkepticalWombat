@@ -1,9 +1,9 @@
 # Architecture & Product Requirements Document (APRD)
 ## The Skeptical Wombat — Roadmap to Production
 
-**Last Updated:** April 15, 2026  
+**Last Updated:** April 27, 2026  
 **Status:** Beta Ready (Security & Quality Issues Required Before Public Launch)  
-**Total Estimated Work:** ~92.5 hours (3 weeks focused development)
+**Total Estimated Work:** ~92.5 hours (4-7 weeks depending on availability: 22h Phase 1, 25h Phase 2, 30h Phase 3)
 
 ---
 
@@ -12,7 +12,7 @@
 **The Skeptical Wombat** is a React 18 + TypeScript web application designed to help partners navigate disagreements through AI-driven analysis using Google Gemini and Firebase.
 
 **Current State:**
-- ✅ Core features complete (10-phase workflow)
+- ✅ Core features complete (11-phase workflow)
 - ✅ All React components built and functional
 - ✅ AI service integrated with fallback logic
 - ✅ Multi-platform deployment configs ready
@@ -45,20 +45,23 @@ const response = await fetch(apiUrl + `?key=${apiKey}`);  // Sent in URL
 
 ---
 
-### SEC-02: Firebase Config with API Key Embedded
-**Severity:** 🔴 CRITICAL  
+### SEC-02: Firebase API Key Not Domain-Restricted
+**Severity:** 🟡 HIGH  
 **File:** `src/services/firebase.ts:7`  
 **Problem:**
 ```typescript
 const firebaseConfig = JSON.parse(import.meta.env.VITE_FIREBASE_CONFIG || '{}');
-// VITE_FIREBASE_CONFIG = {"apiKey": "AIzaSy...", ...}  // Public
+// VITE_FIREBASE_CONFIG = {"apiKey": "AIzaSy...", ...}
+// API key is valid for ANY domain (no HTTP referrer restriction)
 ```
-**Impact:** Firebase API key is restricted to Android/iOS/Web, but still reduces security posture  
-**Solution:** Use Firebase public config (no sensitive keys), rely on RLS  
-**Effort:** 4 hours
-- Remove `apiKey` from VITE_FIREBASE_CONFIG
-- Use only public fields (projectId, authDomain, etc.)
-- Verify RLS prevents unauthorized access
+**Impact:** If API key leaks, it can be used from any malicious website; attackers can query Firebase with this key  
+**Solution:** Restrict API key to your domain(s) in Firebase Console
+1. Go to Firebase Console → Project Settings → API Keys
+2. Edit the web API key
+3. Set "Application restrictions" to "HTTP referrers" 
+4. Add your domain(s): `skepticalwombat.example.com`, `localhost`
+5. Restrict "API restrictions" to: Firestore API, Authentication API only
+**Effort:** 0.5 hours (Firebase console configuration)
 
 ---
 
@@ -84,8 +87,9 @@ service cloud.firestore {
       allow read, write: if request.auth.uid == uid;
     }
     match /artifacts/{appId}/public/data/problems/{problemId} {
+      allow create: if request.auth.uid in request.resource.data.participants;
       allow read: if request.auth.uid in resource.data.participants;
-      allow write: if request.auth.uid in resource.data.participants;
+      allow update, delete: if request.auth.uid in resource.data.participants;
     }
   }
 }
@@ -375,8 +379,8 @@ getField(problem, 'steelman', myRole);
 **Problem:** Every phase component duplicates:
 - Props structure (`{ problem, onSave, onSubmit, myRole, isAiLoading }`)
 - Role derivation (`const partnerRole = myRole === 'user1' ? 'user2' : 'user1'`)
-- Error boundary setup
 - Loading state handling
+- Partner status UI blocks
 
 **Solution:** Custom hook + base component pattern  
 **Effort:** 2 hours
@@ -395,7 +399,10 @@ getField(problem, 'steelman', myRole);
 
 **Solution:** Use the reducer
 ```typescript
-const [problem, dispatch] = useReducer(problemStateReducer, initialProblem);
+const [problem, dispatch] = useReducer(
+  (state, action) => problemStateReducer(state, action, user.uid),
+  initialProblem
+);
 dispatch({ type: 'SUBMIT_PRIVATE_VERSION', payload: { text, translation } });
 ```
 **Effort:** 4 hours
@@ -471,7 +478,7 @@ await updateProblem(problemId, {
 
 ### ARCH-06: `manipulation_analysis` Fields Never Written
 **Severity:** 🟢 LOW  
-**File:** `src/types/index.ts:28-29`, `src/services/firebase.ts:77-78`  
+**File:** `src/types/index.ts:34-35`, `src/services/firebase.ts:77-78`  
 **Problem:** Schema includes `user1_manipulation_analysis`, `user2_manipulation_analysis` but code never writes to them  
 **Solution:** Either delete the fields or wire them up (see ARCH-05)  
 **Effort:** 1 hour
@@ -567,7 +574,7 @@ test('PhasePrivateVersion renders textarea', () => {
 ### TEST-03: No Integration Test for Full Workflow
 **Severity:** 🟡 HIGH  
 **File:** N/A (doesn't exist)  
-**Problem:** No test verifies the entire 10-phase workflow works  
+**Problem:** No test verifies the entire 11-phase workflow works  
 **Solution:** E2E or integration test that simulates both users  
 **Effort:** 6 hours
 
