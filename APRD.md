@@ -3,7 +3,7 @@
 
 **Last Updated:** April 27, 2026  
 **Status:** Beta Ready (Security & Quality Issues Required Before Public Launch)  
-**Total Estimated Work:** ~92.5 hours (4-7 weeks depending on availability: 22h Phase 1, 25h Phase 2, 30h Phase 3)
+**Total Estimated Work:** ~90 hours (4-5 weeks at 20-25 h/week: ~19.5h Phase 1, ~27h Phase 2, ~43.5h Phase 3)
 
 ---
 
@@ -69,7 +69,7 @@ const firebaseConfig = JSON.parse(import.meta.env.VITE_FIREBASE_CONFIG || '{}');
 **Severity:** 🔴 CRITICAL  
 **File:** Firebase Console (not in repo)  
 **Problem:** Default Firebase rules allow authenticated reads/writes to everything
-```
+```javascript
 // Current (insecure):
 match /{document=**} {
   allow read, write: if request.auth != null;
@@ -121,7 +121,7 @@ build: {
 
 ---
 
-### SEC-05: Invite Link Has No Expiry
+### SEC-05: Invite Link Has No Expiry (Must Be Server-Enforced)
 **Severity:** 🟡 MEDIUM  
 **File:** `src/context/AppContext.tsx:86-90`  
 **Problem:**
@@ -129,21 +129,35 @@ build: {
 const urlParams = new URLSearchParams(window.location.search);
 const inviterId = urlParams.get('invite');
 if (inviterId && inviterId !== currentUser.uid) {
-    await linkPartners(inviterId, currentUser.uid);  // No expiry, no validation
+    await linkPartners(inviterId, currentUser.uid);  // Client-side validation only
 }
 ```
-**Impact:** Invite links never expire; old links can be reused maliciously  
-**Solution:** Store invites in Firebase with 7-day expiry, validate before accepting  
-**Effort:** 2 hours
+**Impact:** Invite links never expire; old links can be reused maliciously; client-side expiry validation can be bypassed  
+**Solution:** Create server-enforced invite acceptance flow:
+1. Store invite documents in Firestore with fields: `inviterId`, `inviteeUid`, `createdAt`, `consumed: boolean`
+2. Enforce via Firestore Security Rules or Cloud Function:
+   - Only allow acceptance if `createdAt > now - 7 days`
+   - Only allow one-time use (consume-on-use): set `consumed = true` atomically
+   - Prevent direct partner linking except through the validated invite flow
+3. Client calls validated endpoint instead of `linkPartners()` directly
+
+**Effort:** 3 hours
 
 ---
 
-### SEC-06: No Rate Limiting on AI API Calls
+### SEC-06: No Rate Limiting on AI API Calls (Must Be Backend-Enforced)
 **Severity:** 🟡 HIGH  
 **File:** `src/services/ai.ts` (entire file)  
-**Problem:** Any user can call `getTranslation()`, `getAIAnalysis()`, etc. unlimited times  
+**Problem:** Any user can call `getTranslation()`, `getAIAnalysis()`, etc. unlimited times; frontend-only limits are bypassable  
 **Impact:** Attacker can drain API quota, incur charges, cause DoS  
-**Solution:** Implement rate limiting (e.g., 10 calls/minute per user)  
+**Solution:** Implement backend/proxy rate limiting (per-user + per-IP fallback):
+1. Add middleware to backend AI proxy (from SEC-01)
+2. Use token-bucket or fixed-window limiter (e.g., Redis)
+3. Key by authenticated user ID (from JWT), fallback to IP for unauthenticated
+4. Enforce: 10 requests/minute per user
+5. Return HTTP 429 + Retry-After header when limit exceeded
+6. Frontend should respect 429 but cannot bypass it (backend enforces)
+
 **Effort:** 4 hours
 
 ---
@@ -166,7 +180,7 @@ These don't block shipping but hurt maintainability and extensibility.
 **Violation:** 6+ responsibilities in one file  
 **Impact:** Hard to test, hard to reason about, tight coupling  
 **Solution:** Split into 3-4 focused contexts
-```
+```text
 AuthContext          // signIn, customTokenSignIn, user, partner
 ProblemsContext      // createNewProblem, updateProblem, problems
 AIContext            // AI calls + loading states
@@ -642,12 +656,12 @@ test('PhasePrivateVersion renders textarea', () => {
 
 | Category | Issues | Total Hours |
 |----------|--------|------------|
-| **Security** | 6 | 21.5h |
+| **Security** | 6 | 19h |
 | **SOLID Principles** | 6 | 23h |
 | **DRY Violations** | 6 | 11.5h |
 | **Architecture** | 9 | 17.5h |
 | **Testing** | 4 | 19h |
-| **TOTAL** | **31** | **92.5h** |
+| **TOTAL** | **31** | **90h** |
 
 **Timeline:**
 - Phase 1 (Ship-blockers): 1 week (focused dev)
