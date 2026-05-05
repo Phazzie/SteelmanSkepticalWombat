@@ -76,8 +76,8 @@ describe('firebase service', () => {
 
         test('does nothing when newName is falsy', async () => {
             const uid = 'test-uid';
-            // Passing undefined cast as string to test the JS-level protection
-            const result = await updateUserName(uid, undefined as unknown as string);
+            // Call via any to intentionally bypass TypeScript and test the JS-level protection
+            const result = await (updateUserName as any)(uid, undefined);
 
             expect(updateDoc).not.toHaveBeenCalled();
             expect(result).toBeUndefined();
