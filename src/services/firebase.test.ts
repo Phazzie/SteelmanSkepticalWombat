@@ -64,6 +64,16 @@ describe('firebase service', () => {
             expect(result).toBeUndefined();
         });
 
+        test('does nothing when newName is only whitespace', async () => {
+            const uid = 'test-uid';
+            const newName = '   ';
+
+            const result = await updateUserName(uid, newName);
+
+            expect(updateDoc).not.toHaveBeenCalled();
+            expect(result).toBeUndefined();
+        });
+
         test('does nothing when uid is empty', async () => {
             const uid = '';
             const newName = 'Valid Name';
