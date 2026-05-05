@@ -33,7 +33,7 @@ export const createUserProfile = (uid: string) => {
 }
 
 export const updateUserName = (uid: string, newName: string) => {
-    if (uid && newName) {
+    if (uid && newName && newName.trim()) {
         const userDocRef = doc(db, `artifacts/${appId}/users/${uid}`);
         const sanitizedName = newName.trim().substring(0, 50);
         return updateDoc(userDocRef, { name: sanitizedName });

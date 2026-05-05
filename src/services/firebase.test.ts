@@ -41,7 +41,7 @@ describe('firebase service', () => {
 
             await updateUserName(uid, newName);
 
-            expect(doc).toHaveBeenCalledWith(expect.anything(), expect.stringContaining(`/users/${uid}`));
+            expect(doc).toHaveBeenCalledWith(undefined, expect.stringContaining('/users/test-uid'));
             expect(updateDoc).toHaveBeenCalledWith('mock-doc-ref', { name: 'Valid Name' });
         });
 
@@ -64,16 +64,6 @@ describe('firebase service', () => {
             expect(result).toBeUndefined();
         });
 
-        test('does nothing when newName is only whitespace', async () => {
-            const uid = 'test-uid';
-            const newName = '   ';
-
-            const result = await updateUserName(uid, newName);
-
-            expect(updateDoc).not.toHaveBeenCalled();
-            expect(result).toBeUndefined();
-        });
-
         test('does nothing when uid is empty', async () => {
             const uid = '';
             const newName = 'Valid Name';
@@ -86,8 +76,18 @@ describe('firebase service', () => {
 
         test('does nothing when newName is falsy', async () => {
             const uid = 'test-uid';
-            // Call via any to intentionally bypass TypeScript and test the JS-level protection
-            const result = await (updateUserName as any)(uid, undefined);
+            // Passing undefined cast as string to test the JS-level protection
+            const result = await updateUserName(uid, undefined as unknown as string);
+
+            expect(updateDoc).not.toHaveBeenCalled();
+            expect(result).toBeUndefined();
+        });
+
+        test('does nothing when newName is only whitespace', async () => {
+            const uid = 'test-uid';
+            const newName = '   ';
+
+            const result = await updateUserName(uid, newName);
 
             expect(updateDoc).not.toHaveBeenCalled();
             expect(result).toBeUndefined();
