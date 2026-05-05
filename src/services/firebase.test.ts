@@ -41,7 +41,7 @@ describe('firebase service', () => {
 
             await updateUserName(uid, newName);
 
-            expect(doc).toHaveBeenCalled();
+            expect(doc).toHaveBeenCalledWith(expect.anything(), expect.stringContaining(`/users/${uid}`));
             expect(updateDoc).toHaveBeenCalledWith('mock-doc-ref', { name: 'Valid Name' });
         });
 
