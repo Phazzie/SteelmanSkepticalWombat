@@ -30,14 +30,16 @@ export const linkPartners = async (inviterId: string, inviteeId: string) => {
 export const createUserProfile = (uid: string) => {
     const userDocRef = doc(db, `artifacts/${appId}/users/${uid}`);
     return setDoc(userDocRef, { uid, name: `User ${uid.substring(0,4)}`, partnerId: null });
-}
+};
 
 export const updateUserName = (uid: string, newName: string) => {
-    if (uid && newName) {
-        const userDocRef = doc(db, `artifacts/${appId}/users/${uid}`);
-        const sanitizedName = newName.trim().substring(0, 50);
-        return updateDoc(userDocRef, { name: sanitizedName });
-    }
+    if (!uid || typeof newName !== 'string') return undefined;
+
+    const sanitizedName = newName.trim().substring(0, 50);
+    if (!sanitizedName) return undefined;
+
+    const userDocRef = doc(db, `artifacts/${appId}/users/${uid}`);
+    return updateDoc(userDocRef, { name: sanitizedName });
 };
 
 export const onUserSnapshot = (uid: string, callback: (doc: any) => void) => {

@@ -17,7 +17,17 @@ import PhaseWager from './components/phases/PhaseWager';
 import PhaseSolution from './components/phases/PhaseSolution';
 import PhaseResolved from './components/phases/PhaseResolved';
 import { WOMBAT_TROPHY_URL } from './constants';
-import { FirestoreTimestamp, toJsDate } from './types';
+import { FirestoreTimestamp, Problem, toJsDate } from './types';
+
+type ProblemTab = 'active' | 'trophy';
+
+const getProblemsForTab = (problems: Problem[], activeTab: ProblemTab) => {
+    if (activeTab === 'active') {
+        return problems.filter((problem) => problem.status !== 'resolved');
+    }
+
+    return problems.filter((problem) => problem.status === 'resolved');
+};
 
 const App = () => {
     return (
@@ -56,7 +66,9 @@ const MainApp = () => {
 
     const [inviteLink, setInviteLink] = React.useState('');
     const [showInvite, setShowInvite] = React.useState(false);
-    const [activeTab, setActiveTab] = React.useState('active');
+    const [activeTab, setActiveTab] = React.useState<ProblemTab>('active');
+
+    const filteredProblems = React.useMemo(() => getProblemsForTab(problems, activeTab), [problems, activeTab]);
 
     const generateInviteLink = () => {
         if (!user) return;
@@ -206,7 +218,7 @@ const MainApp = () => {
                                 </div>
                                 <button onClick={startNewProblem} className="w-full bg-lime-500 hover:bg-lime-600 text-gray-900 font-bold py-2 px-4 rounded-lg mb-4 transition">+ New Problem</button>
                                 <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-                                    {problems.filter(p => activeTab === 'active' ? p.status !== 'resolved' : p.status === 'resolved').map(p => (
+                                    {filteredProblems.map(p => (
                                         <div key={p.id} onClick={() => setCurrentProblem(p)} className={`p-4 rounded-lg cursor-pointer transition ${currentProblem?.id === p.id ? 'bg-lime-900/50 ring-2 ring-lime-400' : 'bg-gray-800 hover:bg-gray-700'}`}>
                                             <p className="font-semibold truncate text-white">
                                                 {p.problem_statement || `Problem from ${getProblemDateLabel(p)}`}
@@ -214,7 +226,7 @@ const MainApp = () => {
                                             <span className={`text-xs font-medium px-2 py-1 rounded-full ${ p.status === 'resolved' ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'}`}>{p.status.replace(/_/g, ' ')}</span>
                                         </div>
                                     ))}
-                                    {activeTab === 'trophy' && problems.filter(p=>p.status === 'resolved').length === 0 &&
+                                    {activeTab === 'trophy' && filteredProblems.length === 0 &&
                                         <div className="text-center p-8 text-gray-500">
                                             <img src={WOMBAT_TROPHY_URL} className="w-32 h-32 mx-auto rounded-full opacity-30" />
                                             <p className="mt-4 font-serif">The Trophy Room is depressingly empty.</p>
