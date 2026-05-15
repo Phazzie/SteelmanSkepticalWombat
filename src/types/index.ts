@@ -22,11 +22,21 @@ const isFirestoreTimestamp = (value: unknown): value is FirestoreTimestamp => {
     );
 };
 
-export const toJsDate = (value: FirestoreTimestamp | Date): Date => {
-    if (isFirestoreTimestamp(value)) {
-        return value.toDate();
+export const toJsDate = (value: FirestoreTimestamp | Date | unknown): Date => {
+    if (value instanceof Date) {
+        return value;
     }
-    return value;
+
+    if (isFirestoreTimestamp(value)) {
+        try {
+            const converted = value.toDate();
+            return converted instanceof Date ? converted : new Date(Number.NaN);
+        } catch (_error) {
+            return new Date(Number.NaN);
+        }
+    }
+
+    return new Date(Number.NaN);
 };
 
 /**
