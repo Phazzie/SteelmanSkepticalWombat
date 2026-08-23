@@ -14,19 +14,18 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
-          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore']
+          supabase: ['@supabase/supabase-js']
         }
       }
     }
   },
-  define: {
-    // For backwards compatibility with app.ts
-    '__firebase_config': '"undefined"',
-    '__app_id': '"steelman-wombat"'
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test-setup.ts']
   }
 })

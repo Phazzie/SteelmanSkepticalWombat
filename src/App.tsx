@@ -17,11 +17,12 @@ import PhaseWager from './components/phases/PhaseWager';
 import PhaseSolution from './components/phases/PhaseSolution';
 import PhaseResolved from './components/phases/PhaseResolved';
 import { WOMBAT_TROPHY_URL } from './constants';
-import { FirestoreTimestamp, toJsDate } from './types';
+import { toJsDate } from './types';
+import { DataService } from './services/DataService';
 
-const App = () => {
+const App = ({ dataService }: { dataService: DataService }) => {
     return (
-        <AppProvider>
+        <AppProvider dataService={dataService}>
             <MainApp />
         </AppProvider>
     );
@@ -65,7 +66,7 @@ const MainApp = () => {
         setShowInvite(true);
     };
 
-    const getProblemDateLabel = (problem: { createdAt?: FirestoreTimestamp | Date }) => {
+    const getProblemDateLabel = (problem: { createdAt?: string | Date }) => {
         if (!problem.createdAt) return 'unknown date';
         return toJsDate(problem.createdAt).toLocaleDateString();
     };

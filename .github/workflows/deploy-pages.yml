@@ -39,7 +39,8 @@ jobs:
         env:
           NODE_ENV: production
           VITE_BASE_PATH: /SteelmanSkepticalWombat/
-          VITE_FIREBASE_CONFIG: ${{ secrets.VITE_FIREBASE_CONFIG }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
           
       - name: Setup Pages
