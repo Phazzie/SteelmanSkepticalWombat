@@ -102,6 +102,15 @@ create policy problems_select on public.problems
 -- client could call the API directly with a stranger's UUID as the second
 -- participant, polluting that stranger's problem feed and gaining write
 -- access to a row visible to them.
+-- roles is validated here too, not just participants: without this, a
+-- client could satisfy the participants check above while inserting
+-- roles={} or roles pointing at unrelated keys. Since roles is immutable
+-- after insert (excluded from the update grant below) and there's no
+-- delete grant, an unvalidated bad row could never be fixed through the
+-- app afterward — src/App.tsx reads currentProblem.roles[user.uid] to
+-- pick which phase-component fields to read/write, and an undefined role
+-- there means every subsequent read/write silently targets
+-- "undefined_private_version" and friends instead of failing loudly.
 create policy problems_insert on public.problems
     for insert with check (
         cardinality(participants) = 2
@@ -113,6 +122,12 @@ create policy problems_insert on public.problems
               and partner_id = any(participants)
               and partner_id <> auth.uid()
         )
+        and (select count(*) from jsonb_object_keys(roles)) = 2
+        and roles ? (participants[1])::text
+        and roles ? (participants[2])::text
+        and (roles ->> (participants[1])::text) in ('user1', 'user2')
+        and (roles ->> (participants[2])::text) in ('user1', 'user2')
+        and (roles ->> (participants[1])::text) <> (roles ->> (participants[2])::text)
     );
 
 -- participants/roles must be immutable after insert — same reasoning as
