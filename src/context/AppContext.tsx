@@ -24,7 +24,7 @@ interface AppContextType {
     updateUserName: (newName: string) => void;
     createProblem: () => void;
     setCurrentProblemById: (id: string) => void;
-    handleUpdate: (problemId: string, data: Partial<Problem>) => void;
+    handleUpdate: (problemId: string, data: Partial<Problem>) => Promise<void>;
     handleSteelmanSubmit: (text: string) => void;
     handleSteelmanApproval: () => void;
     handleSolutionSteelmanSubmit: (text: string) => void;
@@ -149,7 +149,7 @@ export const AppProvider = ({ dataService, children }: { dataService: DataServic
     }, [dataService, user?.uid, currentProblem?.id, isAiLoading, currentProblem, getAIAnalysis]);
 
     const handleUpdate = (problemId: string, data: Partial<Problem>) => {
-        dataService.updateProblem(problemId, data);
+        return dataService.updateProblem(problemId, data);
     };
 
     const handleAgreement = (type: string) => {
