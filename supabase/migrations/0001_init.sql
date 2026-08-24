@@ -218,11 +218,24 @@ begin
         raise exception 'You already have a partner';
     end if;
 
+    -- This check above isn't locked the way the inviter's row is — the same
+    -- invitee could be racing two different accept_invite calls (two invite
+    -- links opened in two tabs). The WHERE clause below correctly makes the
+    -- losing call's upsert a no-op instead of clobbering the winner's link,
+    -- but without checking FOUND, the losing call would still fall through
+    -- and update ITS inviter's partner_id below regardless — producing a
+    -- one-sided pairing where the inviter thinks they're linked to someone
+    -- whose own row actually points elsewhere. Abort before touching the
+    -- inviter if this invitee's side didn't actually get claimed.
     insert into public.users (id, name, partner_id)
     values (v_invitee_id, 'New User', p_inviter_id)
     on conflict (id) do update
         set partner_id = excluded.partner_id
         where public.users.partner_id is null;
+
+    if not found then
+        raise exception 'You already have a partner';
+    end if;
 
     update public.users set partner_id = v_invitee_id where id = p_inviter_id;
 end;
