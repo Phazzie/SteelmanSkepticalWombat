@@ -77,8 +77,11 @@ describe('AppContext against FakeDataService', () => {
 
         fireEvent.click(screen.getByText('Submit Private Version'));
 
-        await waitFor(async () => {
-            const problems = await new Promise<any[]>((resolve) => ds.onProblemsSnapshot('user-a', resolve));
+        await waitFor(() => {
+            let problems: any[] = [];
+            const unsubscribe = ds.onProblemsSnapshot('user-a', (p) => { problems = p; });
+            unsubscribe();
+
             const problem = problems[0];
             expect(problem.user1_private_version).toBe('I feel unheard.');
             expect(problem.user1_submitted_private).toBe(true);

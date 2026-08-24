@@ -149,7 +149,15 @@ export const AppProvider = ({ dataService, children }: { dataService: DataServic
     }, [dataService, user?.uid, currentProblem?.id, isAiLoading, currentProblem, getAIAnalysis]);
 
     const handleUpdate = (problemId: string, data: Partial<Problem>) => {
-        return dataService.updateProblem(problemId, data);
+        // Deliberately doesn't rethrow: several callers `await handleUpdate(...)`
+        // followed by cleanup (e.g. clearing isAiLoading) that must still run on
+        // failure, and the rest of this file's fire-and-forget call sites (e.g.
+        // handleAgreement) never awaited this at all. Surfacing the failure via
+        // notification, same as every other handler in this file, is enough.
+        return dataService.updateProblem(problemId, data).catch((error) => {
+            console.error("Failed to save:", error);
+            setNotification({ show: true, message: "Couldn't save that. Try again.", type: 'warning', duration: 4000 });
+        });
     };
 
     const handleAgreement = (type: string) => {
@@ -325,7 +333,12 @@ export const AppProvider = ({ dataService, children }: { dataService: DataServic
         isAiLoading,
         notification,
         setNotification,
-        signIn: () => { dataService.anonymousSignIn(); },
+        signIn: () => {
+            dataService.anonymousSignIn().catch((error) => {
+                console.error("Sign-in failed:", error);
+                setNotification({ show: true, message: "Sign-in failed. Please refresh.", type: 'warning', duration: 4000 });
+            });
+        },
         createProblem: startOrCreateProblem,
         setCurrentProblemById: (id: string) => {
             const selected = problems.find((p) => p.id === id);
@@ -333,7 +346,13 @@ export const AppProvider = ({ dataService, children }: { dataService: DataServic
         },
         startNewProblem: startOrCreateProblem,
         setCurrentProblem,
-        updateUserName: (newName: string) => { if (user) dataService.updateUserName(user.uid, newName); },
+        updateUserName: (newName: string) => {
+            if (!user) return;
+            dataService.updateUserName(user.uid, newName).catch((error) => {
+                console.error("Failed to update name:", error);
+                setNotification({ show: true, message: "Couldn't save your name. Try again.", type: 'warning', duration: 4000 });
+            });
+        },
         handleUpdate,
         handleAgreement,
         handleSteelmanApproval,

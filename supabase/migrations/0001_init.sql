@@ -70,11 +70,23 @@ alter table public.problems enable row level security;
 create policy users_select on public.users
     for select using (id = auth.uid() or partner_id = auth.uid());
 
+-- partner_id must never be settable by the client directly — only by
+-- accept_invite() (SECURITY DEFINER, bypasses RLS for its own writes).
+-- A row policy alone doesn't stop this: "with check" on UPDATE governs which
+-- *rows* are writable, not which *columns*, so a client could otherwise call
+-- .update({ partner_id: 'victim-uuid' }) on their own row directly, sidestep
+-- accept_invite()'s validation entirely, and then satisfy problems_insert's
+-- "partner_id = any(participants)" check with a partner_id they made up.
+-- Column-level GRANTs are enforced independently of RLS, so this closes the
+-- gap regardless of what the row policy's USING/WITH CHECK say.
 create policy users_insert_own on public.users
-    for insert with check (id = auth.uid());
+    for insert with check (id = auth.uid() and partner_id is null);
 
 create policy users_update_own on public.users
     for update using (id = auth.uid());
+
+revoke update on public.users from authenticated;
+grant update (name) on public.users to authenticated;
 
 -- Problems: readable/writable only by the two listed participants.
 create policy problems_select on public.problems
@@ -100,6 +112,12 @@ create policy problems_insert on public.problems
 
 create policy problems_update on public.problems
     for update using (auth.uid() = any(participants));
+
+-- Explicit grants rather than relying on Supabase's default-privilege setup
+-- for new projects — makes this migration's access model self-contained
+-- instead of assuming ambient project configuration.
+grant select, insert on public.users to authenticated;
+grant select, insert, update on public.problems to authenticated;
 
 -- KNOWN LIMITATION (tracked as a fast-follow, not silently accepted):
 -- problems_update currently lets either participant write ANY column on a
