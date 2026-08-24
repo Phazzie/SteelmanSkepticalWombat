@@ -54,11 +54,17 @@ export const AppProvider = ({ dataService, children }: { dataService: DataServic
 
     const getAIAnalysis = useCallback(async (problem: Problem) => {
         setIsAiLoading('verdict');
-        const analysisText = await getWombatAnalysis(problem);
-        if (analysisText) {
-            await dataService.updateProblem(problem.id, { ai_analysis: analysisText, status: 'propose_solutions' });
+        try {
+            const analysisText = await getWombatAnalysis(problem);
+            if (analysisText) {
+                await dataService.updateProblem(problem.id, { ai_analysis: analysisText, status: 'propose_solutions' });
+            }
+        } catch (error) {
+            console.error("Failed to save AI analysis:", error);
+            setNotification({ show: true, message: "Couldn't save the Wombat's verdict. Try again.", type: 'warning', duration: 4000 });
+        } finally {
+            setIsAiLoading(null);
         }
-        setIsAiLoading(null);
     }, [dataService]);
 
     // --- Auth + profile bootstrap ---
@@ -103,29 +109,39 @@ export const AppProvider = ({ dataService, children }: { dataService: DataServic
             }
 
             userUnsubscribe = dataService.onUserSnapshot(userId, async (userData) => {
-                if (userData) {
-                    setUser(userData);
-                    if (userData.partnerId) {
-                        if (userData.partnerId !== lastPartnerId) {
+                try {
+                    if (userData) {
+                        setUser(userData);
+                        if (userData.partnerId) {
+                            if (userData.partnerId !== lastPartnerId) {
+                                teardownPartner();
+                                lastPartnerId = userData.partnerId;
+                                partnerUnsubscribe = dataService.onPartnerSnapshot(userData.partnerId, setPartner);
+                            }
+                        } else {
                             teardownPartner();
-                            lastPartnerId = userData.partnerId;
-                            partnerUnsubscribe = dataService.onPartnerSnapshot(userData.partnerId, setPartner);
+                            setPartner(null);
                         }
                     } else {
-                        teardownPartner();
-                        setPartner(null);
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const inviterId = urlParams.get('invite');
+                        if (inviterId && inviterId !== userId) {
+                            await dataService.acceptInvite(inviterId);
+                            window.history.replaceState({}, document.title, window.location.pathname);
+                        } else {
+                            await dataService.createUserProfile(userId);
+                        }
                     }
-                } else {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const inviterId = urlParams.get('invite');
-                    if (inviterId && inviterId !== userId) {
-                        await dataService.acceptInvite(inviterId);
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                    } else {
-                        await dataService.createUserProfile(userId);
-                    }
+                } catch (error) {
+                    // acceptInvite/createUserProfile can reject (bad invite,
+                    // network, RLS). Without this catch it was an unhandled
+                    // rejection AND setIsLoading(false) below never ran,
+                    // leaving the UI stuck loading on top of the silent error.
+                    console.error("Failed to load or create profile:", error);
+                    setNotification({ show: true, message: "Couldn't load your profile. Please refresh.", type: 'warning', duration: 4000 });
+                } finally {
+                    setIsLoading(false);
                 }
-                setIsLoading(false);
             });
         });
 
@@ -256,13 +272,19 @@ export const AppProvider = ({ dataService, children }: { dataService: DataServic
     const handleBrainstorm = async () => {
         if (!currentProblem) return;
         setIsAiLoading('brainstorm');
-        const result = await getBrainstorm(currentProblem);
-        if (result) {
-            await dataService.updateProblem(currentProblem.id, { brainstormed_solutions: result });
-        } else {
-            setNotification({ show: true, message: "The Wombat's brainstorming circuit is jammed. Try again.", type: 'warning', duration: 4000 });
+        try {
+            const result = await getBrainstorm(currentProblem);
+            if (result) {
+                await dataService.updateProblem(currentProblem.id, { brainstormed_solutions: result });
+            } else {
+                setNotification({ show: true, message: "The Wombat's brainstorming circuit is jammed. Try again.", type: 'warning', duration: 4000 });
+            }
+        } catch (error) {
+            console.error("Failed to save brainstormed solutions:", error);
+            setNotification({ show: true, message: "Couldn't save those ideas. Try again.", type: 'warning', duration: 4000 });
+        } finally {
+            setIsAiLoading(null);
         }
-        setIsAiLoading(null);
     };
 
     const handleCritique = async (problem: Problem) => {
@@ -326,8 +348,13 @@ export const AppProvider = ({ dataService, children }: { dataService: DataServic
 
     const startOrCreateProblem = async () => {
         if (!user || !partner) return;
-        const newProblem = await dataService.createNewProblem(user, partner);
-        setCurrentProblem(newProblem);
+        try {
+            const newProblem = await dataService.createNewProblem(user, partner);
+            setCurrentProblem(newProblem);
+        } catch (error) {
+            console.error("Failed to create problem:", error);
+            setNotification({ show: true, message: "Couldn't start a new problem. Try again.", type: 'warning', duration: 4000 });
+        }
     };
 
     const value: AppContextType = {

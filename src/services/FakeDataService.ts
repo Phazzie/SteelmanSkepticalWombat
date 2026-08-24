@@ -66,6 +66,9 @@ export class FakeDataService implements DataService {
     }
 
     async createUserProfile(uid: string): Promise<void> {
+        // Idempotent, matching SupabaseDataService: calling this for a uid
+        // that already has a row must not clobber an existing partnerId.
+        if (this.users.has(uid)) return;
         this.users.set(uid, { uid, name: `User ${uid.substring(0, 4)}`, partnerId: null });
         this.emitUser(uid);
     }

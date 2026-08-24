@@ -72,6 +72,7 @@ export class SupabaseDataService implements DataService {
         let cancelled = false;
 
         const fetchWithRetry = async (attempt = 0): Promise<void> => {
+            if (cancelled) return;
             const { data, error } = await this.client.from('users').select('*').eq('id', uid).maybeSingle();
             if (cancelled) return;
             if (error) {
