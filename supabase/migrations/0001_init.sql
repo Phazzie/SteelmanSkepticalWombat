@@ -110,6 +110,14 @@ create policy problems_insert on public.problems
         )
     );
 
+-- participants/roles must be immutable after insert — same reasoning as
+-- partner_id above. USING alone only gates which EXISTING row is
+-- updatable; without a column-level restriction, a participant could
+-- UPDATE the row to append a third UUID to `participants`, and since
+-- problems_select is "auth.uid() = any(participants)", that third party
+-- would immediately gain read/write access to a row they were never
+-- meant to see. Restrict UPDATE to the workflow columns participants
+-- actually need to change; participants/roles/id/created_at are excluded.
 create policy problems_update on public.problems
     for update using (auth.uid() = any(participants));
 
@@ -117,7 +125,44 @@ create policy problems_update on public.problems
 -- for new projects — makes this migration's access model self-contained
 -- instead of assuming ambient project configuration.
 grant select, insert on public.users to authenticated;
-grant select, insert, update on public.problems to authenticated;
+grant select, insert on public.problems to authenticated;
+grant update (
+    status,
+    problem_statement,
+    solution_statement,
+    ai_analysis,
+    human_verdict,
+    escalated_for_human_review,
+    wombats_wager,
+    brainstormed_solutions,
+    user1_agreed_problem,
+    user2_agreed_problem,
+    user1_private_version,
+    user2_private_version,
+    user1_submitted_private,
+    user2_submitted_private,
+    user1_translation,
+    user2_translation,
+    user1_manipulation_analysis,
+    user2_manipulation_analysis,
+    user1_steelman,
+    user2_steelman,
+    user1_submitted_steelman,
+    user2_submitted_steelman,
+    user1_approved_steelman,
+    user2_approved_steelman,
+    user1_proposed_solution,
+    user2_proposed_solution,
+    user1_solution_steelman,
+    user2_solution_steelman,
+    user1_submitted_solution_steelman,
+    user2_submitted_solution_steelman,
+    user1_agreed_solution,
+    user2_agreed_solution,
+    solution_check_date,
+    user1_post_mortem,
+    user2_post_mortem
+) on public.problems to authenticated;
 
 -- KNOWN LIMITATION (tracked as a fast-follow, not silently accepted):
 -- problems_update currently lets either participant write ANY column on a

@@ -89,9 +89,15 @@ export const AppProvider = ({ dataService, children }: { dataService: DataServic
             if (!userId) {
                 try {
                     await dataService.anonymousSignIn();
+                    // On success this triggers a fresh auth event with a real
+                    // userId, re-entering this callback on the branch below,
+                    // which clears isLoading once the profile loads. On
+                    // failure there's no such follow-up event, so isLoading
+                    // would otherwise stay stuck true — clear it explicitly.
                 } catch (error) {
                     console.error("Authentication Error:", error);
                     setNotification({ show: true, message: "Authentication failed. Please refresh.", type: 'warning', duration: 4000 });
+                    setIsLoading(false);
                 }
                 return;
             }
