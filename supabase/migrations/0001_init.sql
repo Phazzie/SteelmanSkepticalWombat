@@ -80,8 +80,23 @@ create policy users_update_own on public.users
 create policy problems_select on public.problems
     for select using (auth.uid() = any(participants));
 
+-- Insert must be exactly [caller, caller's linked partner] — not any two
+-- arbitrary UUIDs the caller happens to name. Without this, an authenticated
+-- client could call the API directly with a stranger's UUID as the second
+-- participant, polluting that stranger's problem feed and gaining write
+-- access to a row visible to them.
 create policy problems_insert on public.problems
-    for insert with check (auth.uid() = any(participants));
+    for insert with check (
+        cardinality(participants) = 2
+        and auth.uid() = any(participants)
+        and exists (
+            select 1
+            from public.users
+            where id = auth.uid()
+              and partner_id = any(participants)
+              and partner_id <> auth.uid()
+        )
+    );
 
 create policy problems_update on public.problems
     for update using (auth.uid() = any(participants));
@@ -125,13 +140,27 @@ begin
     if exists (select 1 from public.users where id = p_inviter_id and partner_id is not null) then
         raise exception 'Inviter already has a partner';
     end if;
+    if exists (select 1 from public.users where id = v_invitee_id and partner_id is not null) then
+        raise exception 'You already have a partner';
+    end if;
 
     insert into public.users (id, name, partner_id)
     values (v_invitee_id, 'New User', p_inviter_id)
-    on conflict (id) do update set partner_id = excluded.partner_id;
+    on conflict (id) do update
+        set partner_id = excluded.partner_id
+        where public.users.partner_id is null;
 
     update public.users set partner_id = v_invitee_id where id = p_inviter_id;
 end;
 $$;
 
 grant execute on function public.accept_invite(uuid) to authenticated;
+
+-- --- Realtime ---
+-- postgres_changes subscriptions (used by SupabaseDataService for live
+-- partner/problem sync) only fire for tables added to this publication.
+-- Without this, onUserSnapshot/onPartnerSnapshot/onProblemsSnapshot only
+-- ever see their initial fetch — inserts and updates from the other
+-- participant never arrive.
+alter publication supabase_realtime add table public.users;
+alter publication supabase_realtime add table public.problems;

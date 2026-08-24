@@ -62,8 +62,30 @@ export const AppProvider = ({ dataService, children }: { dataService: DataServic
     }, [dataService]);
 
     // --- Auth + profile bootstrap ---
+    // Tracks the user/partner snapshot subscriptions explicitly and tears
+    // them down on every re-subscribe and on unmount. onAuthChange's
+    // callback return value isn't consumed by either DataService
+    // implementation, so returning an unsubscribe function from it (the
+    // previous approach) silently leaked a realtime channel per auth event.
     useEffect(() => {
-        const unsubscribe = dataService.onAuthChange(async (userId) => {
+        let userUnsubscribe: (() => void) | null = null;
+        let partnerUnsubscribe: (() => void) | null = null;
+        let lastPartnerId: string | null = null;
+
+        const teardownUser = () => {
+            userUnsubscribe?.();
+            userUnsubscribe = null;
+        };
+        const teardownPartner = () => {
+            partnerUnsubscribe?.();
+            partnerUnsubscribe = null;
+            lastPartnerId = null;
+        };
+
+        const authUnsubscribe = dataService.onAuthChange(async (userId) => {
+            teardownUser();
+            teardownPartner();
+
             if (!userId) {
                 try {
                     await dataService.anonymousSignIn();
@@ -74,12 +96,17 @@ export const AppProvider = ({ dataService, children }: { dataService: DataServic
                 return;
             }
 
-            const unsubscribeUser = dataService.onUserSnapshot(userId, async (userData) => {
+            userUnsubscribe = dataService.onUserSnapshot(userId, async (userData) => {
                 if (userData) {
                     setUser(userData);
                     if (userData.partnerId) {
-                        dataService.onPartnerSnapshot(userData.partnerId, setPartner);
+                        if (userData.partnerId !== lastPartnerId) {
+                            teardownPartner();
+                            lastPartnerId = userData.partnerId;
+                            partnerUnsubscribe = dataService.onPartnerSnapshot(userData.partnerId, setPartner);
+                        }
                     } else {
+                        teardownPartner();
                         setPartner(null);
                     }
                 } else {
@@ -94,9 +121,13 @@ export const AppProvider = ({ dataService, children }: { dataService: DataServic
                 }
                 setIsLoading(false);
             });
-            return unsubscribeUser;
         });
-        return () => unsubscribe();
+
+        return () => {
+            authUnsubscribe();
+            teardownUser();
+            teardownPartner();
+        };
     }, [dataService]);
 
     // --- Problems list ---

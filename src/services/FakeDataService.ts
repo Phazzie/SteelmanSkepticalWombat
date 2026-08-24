@@ -38,6 +38,22 @@ export class FakeDataService implements DataService {
         this.authListeners.forEach((cb) => cb(uid));
     }
 
+    /** Simulates the backend clearing a user's partner link (e.g. the partner unlinked). */
+    clearPartner(uid: string) {
+        const user = this.users.get(uid);
+        if (!user) return;
+        this.users.set(uid, { ...user, partnerId: null });
+        this.emitUser(uid);
+    }
+
+    /** Total live subscriptions across auth/user/problems listeners — used to assert nothing leaks. */
+    get activeListenerCount(): number {
+        let count = this.authListeners.size;
+        for (const set of this.userListeners.values()) count += set.size;
+        for (const set of this.problemsListeners.values()) count += set.size;
+        return count;
+    }
+
     // --- DataService ---
     onAuthChange(callback: (userId: string | null) => void): Unsubscribe {
         this.authListeners.add(callback);

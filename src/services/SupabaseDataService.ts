@@ -58,8 +58,17 @@ export class SupabaseDataService implements DataService {
         let cancelled = false;
 
         const fetchAndEmit = async () => {
-            const { data } = await this.client.from('users').select('*').eq('id', uid).maybeSingle();
-            if (!cancelled) callback(data ? mapUserRow(data) : null);
+            const { data, error } = await this.client.from('users').select('*').eq('id', uid).maybeSingle();
+            if (cancelled) return;
+            if (error) {
+                // A failed query is not the same as "no such user" — maybeSingle()
+                // already reports a genuinely missing row as {data: null, error: null}.
+                // Treating a query failure as null here previously made AppContext
+                // think a real user's profile didn't exist and try to recreate it.
+                console.error(`Failed to fetch user ${uid}:`, error);
+                return;
+            }
+            callback(data ? mapUserRow(data) : null);
         };
         fetchAndEmit();
 
@@ -87,12 +96,19 @@ export class SupabaseDataService implements DataService {
         let cancelled = false;
 
         const fetchAndEmit = async () => {
-            const { data } = await this.client
+            const { data, error } = await this.client
                 .from('problems')
                 .select('*')
                 .contains('participants', [uid])
                 .order('created_at', { ascending: false });
-            if (!cancelled) callback((data ?? []).map(mapProblemRow));
+            if (cancelled) return;
+            if (error) {
+                // Don't let a transient failure present as "you have zero
+                // problems" — that would blow away currentProblem in AppContext.
+                console.error(`Failed to fetch problems for ${uid}:`, error);
+                return;
+            }
+            callback((data ?? []).map(mapProblemRow));
         };
         fetchAndEmit();
 

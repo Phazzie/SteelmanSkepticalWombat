@@ -85,4 +85,30 @@ describe('AppContext against FakeDataService', () => {
             expect(problem.user1_translation).toBe('mock translation');
         });
     });
+
+    test('unmounting tears down every subscription — no leaked auth/user/partner listeners', async () => {
+        const ds = await setUpLinkedPartners();
+        const { unmount } = render(<AppProvider dataService={ds}><TestConsumer /></AppProvider>);
+
+        // auth + user + partner subscriptions should all be live at this point
+        await waitFor(() => expect(screen.getByTestId('partner')).toHaveTextContent('user-b'));
+        expect(ds.activeListenerCount).toBeGreaterThan(0);
+
+        unmount();
+
+        expect(ds.activeListenerCount).toBe(0);
+    });
+
+    test('switching from a partnered user to a partnerless one drops the stale partner subscription', async () => {
+        const ds = await setUpLinkedPartners();
+        render(<AppProvider dataService={ds}><TestConsumer /></AppProvider>);
+        await waitFor(() => expect(screen.getByTestId('partner')).toHaveTextContent('user-b'));
+
+        const withPartnerCount = ds.activeListenerCount;
+
+        ds.clearPartner('user-a');
+
+        await waitFor(() => expect(screen.getByTestId('partner')).toHaveTextContent('no-partner'));
+        expect(ds.activeListenerCount).toBeLessThan(withPartnerCount);
+    });
 });
