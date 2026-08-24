@@ -98,8 +98,18 @@ export class FakeDataService implements DataService {
         const inviter = this.users.get(inviterId);
         if (!inviter) throw new Error('Inviter not found');
         if (inviter.partnerId) throw new Error('Inviter already has a partner');
+        const existingInvitee = this.users.get(inviteeId);
+        if (existingInvitee?.partnerId) throw new Error('You already have a partner');
 
-        this.users.set(inviteeId, { uid: inviteeId, name: `User ${inviteeId.substring(0, 4)}`, partnerId: inviterId });
+        // Matches SupabaseDataService: only set partner_id, never clobber an
+        // existing profile's name (a returning user who already renamed
+        // themselves shouldn't get reset to "User XXXX" on invite accept).
+        this.users.set(
+            inviteeId,
+            existingInvitee
+                ? { ...existingInvitee, partnerId: inviterId }
+                : { uid: inviteeId, name: `User ${inviteeId.substring(0, 4)}`, partnerId: inviterId }
+        );
         this.users.set(inviterId, { ...inviter, partnerId: inviteeId });
         this.emitUser(inviteeId);
         this.emitUser(inviterId);

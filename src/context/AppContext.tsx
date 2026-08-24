@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useRef, ReactNode, useCallback } from 'react';
 import { DataService } from '../services/DataService';
 import {
     getTranslation,
@@ -51,6 +51,11 @@ export const AppProvider = ({ dataService, children }: { dataService: DataServic
     const [isLoading, setIsLoading] = useState(true);
     const [isAiLoading, setIsAiLoading] = useState<string | null>(null);
     const [notification, setNotification] = useState({ show: false, message: '', type: 'info', duration: 4000 });
+
+    // Lets the problems-list effect below read the latest currentProblem
+    // without depending on the object itself — see that effect for why.
+    const currentProblemRef = useRef(currentProblem);
+    useEffect(() => { currentProblemRef.current = currentProblem; }, [currentProblem]);
 
     const getAIAnalysis = useCallback(async (problem: Problem) => {
         setIsAiLoading('verdict');
@@ -153,12 +158,21 @@ export const AppProvider = ({ dataService, children }: { dataService: DataServic
     }, [dataService]);
 
     // --- Problems list ---
+    // Deliberately depends on currentProblem?.id, NOT currentProblem itself.
+    // The callback calls setCurrentProblem(updatedCurrent) with a freshly
+    // .find()'d object every time it fires — a new reference even when
+    // nothing changed. Depending on the whole object here would re-run this
+    // effect on every emission, tearing down and recreating the subscription,
+    // whose initial fetch fires setCurrentProblem again, forming a resubscribe
+    // loop that never settles. currentProblemRef (kept in sync above) lets the
+    // callback read the latest selection without that dependency.
     useEffect(() => {
         if (!user?.uid) return;
         const unsubscribe = dataService.onProblemsSnapshot(user.uid, (fetchedProblems) => {
             setProblems(fetchedProblems);
-            if (currentProblem) {
-                const updatedCurrent = fetchedProblems.find((p) => p.id === currentProblem.id);
+            const current = currentProblemRef.current;
+            if (current) {
+                const updatedCurrent = fetchedProblems.find((p) => p.id === current.id);
                 if (updatedCurrent) {
                     setCurrentProblem(updatedCurrent);
                     if (updatedCurrent.status === 'ai_review' && !updatedCurrent.ai_analysis && !isAiLoading) {
@@ -168,7 +182,7 @@ export const AppProvider = ({ dataService, children }: { dataService: DataServic
             }
         });
         return () => unsubscribe();
-    }, [dataService, user?.uid, currentProblem?.id, isAiLoading, currentProblem, getAIAnalysis]);
+    }, [dataService, user?.uid, currentProblem?.id, isAiLoading, getAIAnalysis]);
 
     const handleUpdate = (problemId: string, data: Partial<Problem>) => {
         // Deliberately doesn't rethrow: several callers `await handleUpdate(...)`
