@@ -21,8 +21,18 @@ export class SupabaseDataService implements DataService {
     constructor(private client: SupabaseClient) {}
 
     onAuthChange(callback: (userId: string | null) => void): Unsubscribe {
+        // Supabase fires this on token refreshes and other events for the
+        // same session, not just actual sign-in/sign-out. AppContext tears
+        // down and rebuilds its user/partner subscriptions every time this
+        // callback fires, so forwarding every event caused a resubscribe
+        // cycle roughly every token refresh. Only forward genuine identity
+        // changes.
+        let lastUserId: string | null | undefined;
         const { data } = this.client.auth.onAuthStateChange((_event, session) => {
-            callback(session?.user?.id ?? null);
+            const userId = session?.user?.id ?? null;
+            if (userId === lastUserId) return;
+            lastUserId = userId;
+            callback(userId);
         });
         return () => data.subscription.unsubscribe();
     }

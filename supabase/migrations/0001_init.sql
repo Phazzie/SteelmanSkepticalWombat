@@ -127,6 +127,7 @@ set search_path = public
 as $$
 declare
     v_invitee_id uuid := auth.uid();
+    v_inviter public.users;
 begin
     if v_invitee_id is null then
         raise exception 'Not authenticated';
@@ -134,10 +135,20 @@ begin
     if v_invitee_id = p_inviter_id then
         raise exception 'Cannot invite yourself';
     end if;
-    if not exists (select 1 from public.users where id = p_inviter_id) then
+
+    -- Lock the inviter's row for the rest of this transaction. Without this,
+    -- two invitees opening the same unused invite concurrently can both pass
+    -- the "inviter has no partner" check before either commits — each gets
+    -- linked to the inviter, but the inviter's own row can only end up
+    -- pointing at one of them, corrupting the other pairing. `for update`
+    -- makes the second concurrent call block here until the first
+    -- transaction commits, so it then sees the now-partnered inviter and
+    -- correctly raises below instead of racing.
+    select * into v_inviter from public.users where id = p_inviter_id for update;
+    if v_inviter is null then
         raise exception 'Inviter not found';
     end if;
-    if exists (select 1 from public.users where id = p_inviter_id and partner_id is not null) then
+    if v_inviter.partner_id is not null then
         raise exception 'Inviter already has a partner';
     end if;
     if exists (select 1 from public.users where id = v_invitee_id and partner_id is not null) then

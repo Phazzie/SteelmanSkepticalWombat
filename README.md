@@ -21,7 +21,7 @@ The Skeptical Wombat is a web application designed to help partners navigate dis
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 22+ (required by `@supabase/supabase-js`)
 - npm or yarn
 - Supabase project (for backend) — run the migration in `supabase/migrations/0001_init.sql`
 - Google Gemini API key
