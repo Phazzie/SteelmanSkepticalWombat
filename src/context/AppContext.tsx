@@ -113,35 +113,56 @@ export const AppProvider = ({ dataService, children }: { dataService: DataServic
                 return;
             }
 
+            const applyProfile = (profile: AppUser) => {
+                setUser(profile);
+                if (profile.partnerId) {
+                    if (profile.partnerId !== lastPartnerId) {
+                        teardownPartner();
+                        lastPartnerId = profile.partnerId;
+                        partnerUnsubscribe = dataService.onPartnerSnapshot(profile.partnerId, setPartner);
+                    }
+                } else {
+                    teardownPartner();
+                    setPartner(null);
+                }
+            };
+
             userUnsubscribe = dataService.onUserSnapshot(userId, async (userData) => {
                 try {
                     if (userData) {
-                        setUser(userData);
-                        if (userData.partnerId) {
-                            if (userData.partnerId !== lastPartnerId) {
-                                teardownPartner();
-                                lastPartnerId = userData.partnerId;
-                                partnerUnsubscribe = dataService.onPartnerSnapshot(userData.partnerId, setPartner);
-                            }
-                        } else {
-                            teardownPartner();
-                            setPartner(null);
+                        applyProfile(userData);
+                        return;
+                    }
+
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const inviterId = urlParams.get('invite');
+                    if (inviterId && inviterId !== userId) {
+                        try {
+                            const profile = await dataService.acceptInvite(inviterId);
+                            applyProfile(profile);
+                        } catch (inviteError) {
+                            // A rejected invite (expired, already used, self-invite)
+                            // must not leave a first-time visitor stuck: without
+                            // clearing the param, every refresh retries the same
+                            // rejected RPC and they can never reach the app. Fall
+                            // back to an unlinked profile instead.
+                            console.error("Invite rejected:", inviteError);
+                            setNotification({ show: true, message: "That invite link didn't work. Starting fresh — you can still link up with your partner from here.", type: 'warning', duration: 6000 });
+                            const profile = await dataService.createUserProfile(userId);
+                            applyProfile(profile);
+                        } finally {
+                            window.history.replaceState({}, document.title, window.location.pathname);
                         }
                     } else {
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const inviterId = urlParams.get('invite');
-                        if (inviterId && inviterId !== userId) {
-                            await dataService.acceptInvite(inviterId);
-                            window.history.replaceState({}, document.title, window.location.pathname);
-                        } else {
-                            await dataService.createUserProfile(userId);
-                        }
+                        const profile = await dataService.createUserProfile(userId);
+                        applyProfile(profile);
                     }
                 } catch (error) {
-                    // acceptInvite/createUserProfile can reject (bad invite,
-                    // network, RLS). Without this catch it was an unhandled
-                    // rejection AND setIsLoading(false) below never ran,
-                    // leaving the UI stuck loading on top of the silent error.
+                    // createUserProfile itself failing (network, RLS) — the
+                    // remaining unhandled-failure case. Without this catch it
+                    // was an unhandled rejection AND setIsLoading(false) below
+                    // never ran, leaving the UI stuck loading on top of the
+                    // silent error.
                     console.error("Failed to load or create profile:", error);
                     setNotification({ show: true, message: "Couldn't load your profile. Please refresh.", type: 'warning', duration: 4000 });
                 } finally {

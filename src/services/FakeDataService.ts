@@ -65,12 +65,15 @@ export class FakeDataService implements DataService {
         this.seedAuthenticatedUser(`fake-user-${this.nextId++}`);
     }
 
-    async createUserProfile(uid: string): Promise<void> {
+    async createUserProfile(uid: string): Promise<AppUser> {
         // Idempotent, matching SupabaseDataService: calling this for a uid
         // that already has a row must not clobber an existing partnerId.
-        if (this.users.has(uid)) return;
-        this.users.set(uid, { uid, name: `User ${uid.substring(0, 4)}`, partnerId: null });
+        const existing = this.users.get(uid);
+        if (existing) return existing;
+        const created = { uid, name: `User ${uid.substring(0, 4)}`, partnerId: null };
+        this.users.set(uid, created);
         this.emitUser(uid);
+        return created;
     }
 
     async updateUserName(uid: string, newName: string): Promise<void> {
@@ -91,7 +94,7 @@ export class FakeDataService implements DataService {
         return this.onUserSnapshot(partnerId, callback);
     }
 
-    async acceptInvite(inviterId: string): Promise<void> {
+    async acceptInvite(inviterId: string): Promise<AppUser> {
         const inviteeId = this.authUserId;
         if (!inviteeId) throw new Error('Not authenticated');
         if (inviteeId === inviterId) throw new Error('Cannot invite yourself');
@@ -104,15 +107,14 @@ export class FakeDataService implements DataService {
         // Matches SupabaseDataService: only set partner_id, never clobber an
         // existing profile's name (a returning user who already renamed
         // themselves shouldn't get reset to "User XXXX" on invite accept).
-        this.users.set(
-            inviteeId,
-            existingInvitee
-                ? { ...existingInvitee, partnerId: inviterId }
-                : { uid: inviteeId, name: `User ${inviteeId.substring(0, 4)}`, partnerId: inviterId }
-        );
+        const invitee = existingInvitee
+            ? { ...existingInvitee, partnerId: inviterId }
+            : { uid: inviteeId, name: `User ${inviteeId.substring(0, 4)}`, partnerId: inviterId };
+        this.users.set(inviteeId, invitee);
         this.users.set(inviterId, { ...inviter, partnerId: inviteeId });
         this.emitUser(inviteeId);
         this.emitUser(inviterId);
+        return invitee;
     }
 
     onProblemsSnapshot(uid: string, callback: (problems: Problem[]) => void): Unsubscribe {

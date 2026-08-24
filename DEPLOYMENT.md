@@ -42,18 +42,28 @@ gcloud app deploy app.yaml
 ```
 
 **Cloud Run Deployment**
+
+This image serves a pre-built static bundle from nginx — Vite substitutes
+`VITE_*` values into that bundle at `docker build` time, not when the
+container starts. `gcloud run deploy --set-env-vars` only sets the running
+container's environment, which the already-built bundle never reads, so
+the values must be passed as **build args**, not deploy-time env vars:
+
 ```bash
-# Build and push Docker image
-docker build -t gcr.io/YOUR_PROJECT_ID/skeptical-wombat .
+# Build and push Docker image — note --build-arg, not --set-env-vars
+docker build \
+  --build-arg VITE_SUPABASE_URL="your-url" \
+  --build-arg VITE_SUPABASE_ANON_KEY="your-anon-key" \
+  --build-arg VITE_GEMINI_API_KEY="your-key" \
+  -t gcr.io/YOUR_PROJECT_ID/skeptical-wombat .
 docker push gcr.io/YOUR_PROJECT_ID/skeptical-wombat
 
-# Deploy to Cloud Run
+# Deploy to Cloud Run — no VITE_* vars here; they're already baked into the image
 gcloud run deploy skeptical-wombat \
   --image gcr.io/YOUR_PROJECT_ID/skeptical-wombat \
   --platform managed \
   --region us-central1 \
-  --allow-unauthenticated \
-  --set-env-vars VITE_SUPABASE_URL="your-url",VITE_SUPABASE_ANON_KEY="your-anon-key",VITE_GEMINI_API_KEY="your-key"
+  --allow-unauthenticated
 ```
 
 ### 3. Vercel

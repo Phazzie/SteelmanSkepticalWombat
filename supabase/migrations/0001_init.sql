@@ -2,6 +2,11 @@
 -- Mirrors the flat user1_*/user2_* field shape from src/types/index.ts so the
 -- 11 phase components (which read problem[`${role}_field`]) don't need edits.
 
+-- gen_random_uuid() is a Postgres core builtin since v13 (no extension
+-- needed on Supabase's actual PG version), but enabling pgcrypto explicitly
+-- costs nothing and removes any doubt on an older or non-Supabase Postgres.
+create extension if not exists pgcrypto;
+
 create table if not exists public.users (
     id uuid primary key references auth.users(id) on delete cascade,
     name text not null default 'New User',
@@ -126,6 +131,14 @@ create policy problems_update on public.problems
 -- instead of assuming ambient project configuration.
 grant select, insert on public.users to authenticated;
 grant select, insert on public.problems to authenticated;
+
+-- Standard Supabase projects grant table-level UPDATE to `authenticated` by
+-- default. The column-scoped grant below adds a narrower privilege but does
+-- NOT by itself remove that broader ambient one — without this revoke, the
+-- column restriction is decorative and participants/roles stay mutable via
+-- direct UPDATE despite every comment above saying otherwise. Same reasoning
+-- as the revoke already done for public.users above.
+revoke update on public.problems from authenticated;
 grant update (
     status,
     problem_statement,
@@ -183,7 +196,7 @@ grant update (
 -- and enforces its own validation instead of trusting the client.
 
 create or replace function public.accept_invite(p_inviter_id uuid)
-returns void
+returns public.users
 language plpgsql
 security definer
 set search_path = public
@@ -191,6 +204,7 @@ as $$
 declare
     v_invitee_id uuid := auth.uid();
     v_inviter public.users;
+    v_invitee public.users;
 begin
     if v_invitee_id is null then
         raise exception 'Not authenticated';
@@ -231,13 +245,20 @@ begin
     values (v_invitee_id, 'New User', p_inviter_id)
     on conflict (id) do update
         set partner_id = excluded.partner_id
-        where public.users.partner_id is null;
+        where public.users.partner_id is null
+    returning * into v_invitee;
 
     if not found then
         raise exception 'You already have a partner';
     end if;
 
     update public.users set partner_id = v_invitee_id where id = p_inviter_id;
+
+    -- Return the invitee's resulting row directly rather than leaving the
+    -- caller to wait for it via a realtime subscription, whose channel can
+    -- still be establishing when this transaction commits and would then
+    -- miss this one-time event entirely.
+    return v_invitee;
 end;
 $$;
 

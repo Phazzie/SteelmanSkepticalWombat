@@ -42,15 +42,35 @@ export class SupabaseDataService implements DataService {
         if (error) throw error;
     }
 
-    async createUserProfile(uid: string): Promise<void> {
-        // Idempotent: multi-tab sign-in, a retried auth event, or the
-        // watchUserRow error-fallback below can all call this for a uid
-        // that already has a row. A plain insert would throw a duplicate-key
-        // error in that case and abort profile bootstrap for an existing user.
-        const { error } = await this.client
+    async createUserProfile(uid: string): Promise<AppUser> {
+        // Idempotent and returns the resulting row directly, rather than
+        // requiring the caller to wait for it via onUserSnapshot's realtime
+        // channel (whose subscription can still be establishing when this
+        // write commits, missing the one-time creation event entirely).
+        //
+        // Deliberately not a single upsert(): postgrest-js's upsert only
+        // exposes ignoreDuplicates as a whole-row on/off switch — "do
+        // nothing" on conflict, which returns no row at all via RETURNING
+        // (breaking the "always return the row" contract here), or a full
+        // merge, which would reset an existing custom name back to the
+        // "User XXXX" default on every idempotent call. Select-then-insert
+        // instead, so an existing row is never touched.
+        const { data: existing } = await this.client.from('users').select('*').eq('id', uid).maybeSingle();
+        if (existing) return mapUserRow(existing);
+
+        const { data, error } = await this.client
             .from('users')
-            .upsert({ id: uid, name: `User ${uid.substring(0, 4)}` }, { onConflict: 'id', ignoreDuplicates: true });
-        if (error) throw error;
+            .insert({ id: uid, name: `User ${uid.substring(0, 4)}` })
+            .select()
+            .single();
+        if (!error) return mapUserRow(data);
+
+        // Multi-tab sign-in can lose this exact race: another tab inserted
+        // between our select and our insert. Fetch what it wrote instead of
+        // failing profile bootstrap over a benign duplicate-key error.
+        const { data: raceWinner } = await this.client.from('users').select('*').eq('id', uid).maybeSingle();
+        if (raceWinner) return mapUserRow(raceWinner);
+        throw error;
     }
 
     async updateUserName(uid: string, newName: string): Promise<void> {
@@ -78,19 +98,19 @@ export class SupabaseDataService implements DataService {
             if (error) {
                 console.error(`Failed to fetch user ${uid} (attempt ${attempt + 1}):`, error);
                 // A failed query is not the same as "no such user" — maybeSingle()
-                // already reports a genuinely missing row as {data: null, error: null}
-                // — so don't call back with null on the first failures, or AppContext
-                // would think a real user's profile didn't exist. But never calling
-                // back at all leaves AppContext's isLoading stuck true forever (it
-                // only clears inside this callback), so after a few retries give up
-                // and emit null anyway. createUserProfile is idempotent, so if this
-                // was actually a transient blip on an existing user, the resulting
-                // "recreate the profile" path is a harmless no-op rather than a bug.
-                if (attempt < 2) {
-                    setTimeout(() => { fetchWithRetry(attempt + 1); }, 500 * 2 ** attempt);
-                    return;
-                }
-                callback(null);
+                // already reports a genuinely missing row as {data: null, error: null}.
+                // Emitting null on a real query failure previously made AppContext
+                // think a real user's profile didn't exist and try to recreate it —
+                // and worse, once it gave up retrying, the only thing that could ever
+                // trigger another attempt was some unrelated future change to this
+                // row via the postgres_changes channel below, which might never come
+                // for a rarely-updated profile, leaving the app stuck mid-outage even
+                // after connectivity actually recovered. So: never give up. Retry with
+                // capped backoff indefinitely instead of ever emitting a false null —
+                // isLoading staying true for as long as the outage lasts is honest;
+                // silently pretending the profile doesn't exist is not.
+                const delay = Math.min(1000 * 2 ** attempt, 15000);
+                if (!cancelled) setTimeout(() => { fetchWithRetry(attempt + 1); }, delay);
                 return;
             }
             callback(data ? mapUserRow(data) : null);
@@ -115,9 +135,10 @@ export class SupabaseDataService implements DataService {
         };
     }
 
-    async acceptInvite(inviterId: string): Promise<void> {
-        const { error } = await this.client.rpc('accept_invite', { p_inviter_id: inviterId });
+    async acceptInvite(inviterId: string): Promise<AppUser> {
+        const { data, error } = await this.client.rpc('accept_invite', { p_inviter_id: inviterId }).single();
         if (error) throw error;
+        return mapUserRow(data);
     }
 
     onProblemsSnapshot(uid: string, callback: (problems: Problem[]) => void): Unsubscribe {
