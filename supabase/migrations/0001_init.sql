@@ -1,0 +1,289 @@
+-- Initial schema for The Skeptical Wombat, replacing the Firestore data model.
+-- Mirrors the flat user1_*/user2_* field shape from src/types/index.ts so the
+-- 11 phase components (which read problem[`${role}_field`]) don't need edits.
+
+-- gen_random_uuid() is a Postgres core builtin since v13 (no extension
+-- needed on Supabase's actual PG version), but enabling pgcrypto explicitly
+-- costs nothing and removes any doubt on an older or non-Supabase Postgres.
+create extension if not exists pgcrypto;
+
+create table if not exists public.users (
+    id uuid primary key references auth.users(id) on delete cascade,
+    name text not null default 'New User',
+    partner_id uuid references public.users(id) on delete set null,
+    created_at timestamptz not null default now()
+);
+
+create table if not exists public.problems (
+    id uuid primary key default gen_random_uuid(),
+    participants uuid[] not null,
+    roles jsonb not null, -- e.g. {"<uid1>": "user1", "<uid2>": "user2"}
+    status text not null default 'agree_statement',
+
+    problem_statement text not null default '',
+    solution_statement text,
+    ai_analysis text not null default '',
+    human_verdict text not null default '',
+    escalated_for_human_review boolean not null default false,
+    wombats_wager text,
+    brainstormed_solutions text,
+
+    user1_agreed_problem boolean not null default false,
+    user2_agreed_problem boolean not null default false,
+
+    user1_private_version text not null default '',
+    user2_private_version text not null default '',
+    user1_submitted_private boolean not null default false,
+    user2_submitted_private boolean not null default false,
+    user1_translation text not null default '',
+    user2_translation text not null default '',
+    user1_manipulation_analysis text not null default '',
+    user2_manipulation_analysis text not null default '',
+
+    user1_steelman text not null default '',
+    user2_steelman text not null default '',
+    user1_submitted_steelman boolean not null default false,
+    user2_submitted_steelman boolean not null default false,
+    user1_approved_steelman boolean not null default false,
+    user2_approved_steelman boolean not null default false,
+
+    user1_proposed_solution text not null default '',
+    user2_proposed_solution text not null default '',
+    user1_solution_steelman text not null default '',
+    user2_solution_steelman text not null default '',
+    user1_submitted_solution_steelman boolean not null default false,
+    user2_submitted_solution_steelman boolean not null default false,
+
+    user1_agreed_solution boolean not null default false,
+    user2_agreed_solution boolean not null default false,
+    solution_check_date timestamptz,
+
+    user1_post_mortem text not null default '',
+    user2_post_mortem text not null default '',
+
+    created_at timestamptz not null default now()
+);
+
+create index if not exists problems_participants_idx on public.problems using gin (participants);
+
+-- --- Row Level Security ---
+
+alter table public.users enable row level security;
+alter table public.problems enable row level security;
+
+-- A user can read their own row, and their partner's row (partner_id points back at them).
+create policy users_select on public.users
+    for select using (id = auth.uid() or partner_id = auth.uid());
+
+-- partner_id must never be settable by the client directly — only by
+-- accept_invite() (SECURITY DEFINER, bypasses RLS for its own writes).
+-- A row policy alone doesn't stop this: "with check" on UPDATE governs which
+-- *rows* are writable, not which *columns*, so a client could otherwise call
+-- .update({ partner_id: 'victim-uuid' }) on their own row directly, sidestep
+-- accept_invite()'s validation entirely, and then satisfy problems_insert's
+-- "partner_id = any(participants)" check with a partner_id they made up.
+-- Column-level GRANTs are enforced independently of RLS, so this closes the
+-- gap regardless of what the row policy's USING/WITH CHECK say.
+create policy users_insert_own on public.users
+    for insert with check (id = auth.uid() and partner_id is null);
+
+create policy users_update_own on public.users
+    for update using (id = auth.uid());
+
+revoke update on public.users from authenticated;
+grant update (name) on public.users to authenticated;
+
+-- Problems: readable/writable only by the two listed participants.
+create policy problems_select on public.problems
+    for select using (auth.uid() = any(participants));
+
+-- Insert must be exactly [caller, caller's linked partner] — not any two
+-- arbitrary UUIDs the caller happens to name. Without this, an authenticated
+-- client could call the API directly with a stranger's UUID as the second
+-- participant, polluting that stranger's problem feed and gaining write
+-- access to a row visible to them.
+-- roles is validated here too, not just participants: without this, a
+-- client could satisfy the participants check above while inserting
+-- roles={} or roles pointing at unrelated keys. Since roles is immutable
+-- after insert (excluded from the update grant below) and there's no
+-- delete grant, an unvalidated bad row could never be fixed through the
+-- app afterward — src/App.tsx reads currentProblem.roles[user.uid] to
+-- pick which phase-component fields to read/write, and an undefined role
+-- there means every subsequent read/write silently targets
+-- "undefined_private_version" and friends instead of failing loudly.
+create policy problems_insert on public.problems
+    for insert with check (
+        cardinality(participants) = 2
+        and auth.uid() = any(participants)
+        and exists (
+            select 1
+            from public.users
+            where id = auth.uid()
+              and partner_id = any(participants)
+              and partner_id <> auth.uid()
+        )
+        and (select count(*) from jsonb_object_keys(roles)) = 2
+        and roles ? (participants[1])::text
+        and roles ? (participants[2])::text
+        and (roles ->> (participants[1])::text) in ('user1', 'user2')
+        and (roles ->> (participants[2])::text) in ('user1', 'user2')
+        and (roles ->> (participants[1])::text) <> (roles ->> (participants[2])::text)
+    );
+
+-- participants/roles must be immutable after insert — same reasoning as
+-- partner_id above. USING alone only gates which EXISTING row is
+-- updatable; without a column-level restriction, a participant could
+-- UPDATE the row to append a third UUID to `participants`, and since
+-- problems_select is "auth.uid() = any(participants)", that third party
+-- would immediately gain read/write access to a row they were never
+-- meant to see. Restrict UPDATE to the workflow columns participants
+-- actually need to change; participants/roles/id/created_at are excluded.
+create policy problems_update on public.problems
+    for update using (auth.uid() = any(participants));
+
+-- Explicit grants rather than relying on Supabase's default-privilege setup
+-- for new projects — makes this migration's access model self-contained
+-- instead of assuming ambient project configuration.
+grant select, insert on public.users to authenticated;
+grant select, insert on public.problems to authenticated;
+
+-- Standard Supabase projects grant table-level UPDATE to `authenticated` by
+-- default. The column-scoped grant below adds a narrower privilege but does
+-- NOT by itself remove that broader ambient one — without this revoke, the
+-- column restriction is decorative and participants/roles stay mutable via
+-- direct UPDATE despite every comment above saying otherwise. Same reasoning
+-- as the revoke already done for public.users above.
+revoke update on public.problems from authenticated;
+grant update (
+    status,
+    problem_statement,
+    solution_statement,
+    ai_analysis,
+    human_verdict,
+    escalated_for_human_review,
+    wombats_wager,
+    brainstormed_solutions,
+    user1_agreed_problem,
+    user2_agreed_problem,
+    user1_private_version,
+    user2_private_version,
+    user1_submitted_private,
+    user2_submitted_private,
+    user1_translation,
+    user2_translation,
+    user1_manipulation_analysis,
+    user2_manipulation_analysis,
+    user1_steelman,
+    user2_steelman,
+    user1_submitted_steelman,
+    user2_submitted_steelman,
+    user1_approved_steelman,
+    user2_approved_steelman,
+    user1_proposed_solution,
+    user2_proposed_solution,
+    user1_solution_steelman,
+    user2_solution_steelman,
+    user1_submitted_solution_steelman,
+    user2_submitted_solution_steelman,
+    user1_agreed_solution,
+    user2_agreed_solution,
+    solution_check_date,
+    user1_post_mortem,
+    user2_post_mortem
+) on public.problems to authenticated;
+
+-- KNOWN LIMITATION (tracked as a fast-follow, not silently accepted):
+-- problems_update currently lets either participant write ANY column on a
+-- shared row, including the partner's private_version/steelman fields before
+-- they've submitted. The Firestore rules in the old roadmap had the identical
+-- gap. Closing it properly means splitting private per-user fields into a
+-- separate table (e.g. problem_sides keyed by (problem_id, user_id)) with
+-- row-level ownership, and leaving only shared fields (status, ai_analysis,
+-- wombats_wager, participants, roles) on the parent row. Not done here to
+-- keep this migration mechanical and low-risk; flagging so it isn't confused
+-- with "solved."
+
+-- --- Invite flow (server-enforced, replaces client-side linkPartners) ---
+-- Accepting an invite must update BOTH the inviter's and invitee's rows.
+-- The invitee's own client can't do that under the RLS policies above (it
+-- can only write its own row), which is correct — so the two-sided write
+-- happens here, in a function that runs with the table owner's privileges
+-- and enforces its own validation instead of trusting the client.
+
+create or replace function public.accept_invite(p_inviter_id uuid)
+returns public.users
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_invitee_id uuid := auth.uid();
+    v_inviter public.users;
+    v_invitee public.users;
+begin
+    if v_invitee_id is null then
+        raise exception 'Not authenticated';
+    end if;
+    if v_invitee_id = p_inviter_id then
+        raise exception 'Cannot invite yourself';
+    end if;
+
+    -- Lock the inviter's row for the rest of this transaction. Without this,
+    -- two invitees opening the same unused invite concurrently can both pass
+    -- the "inviter has no partner" check before either commits — each gets
+    -- linked to the inviter, but the inviter's own row can only end up
+    -- pointing at one of them, corrupting the other pairing. `for update`
+    -- makes the second concurrent call block here until the first
+    -- transaction commits, so it then sees the now-partnered inviter and
+    -- correctly raises below instead of racing.
+    select * into v_inviter from public.users where id = p_inviter_id for update;
+    if v_inviter is null then
+        raise exception 'Inviter not found';
+    end if;
+    if v_inviter.partner_id is not null then
+        raise exception 'Inviter already has a partner';
+    end if;
+    if exists (select 1 from public.users where id = v_invitee_id and partner_id is not null) then
+        raise exception 'You already have a partner';
+    end if;
+
+    -- This check above isn't locked the way the inviter's row is — the same
+    -- invitee could be racing two different accept_invite calls (two invite
+    -- links opened in two tabs). The WHERE clause below correctly makes the
+    -- losing call's upsert a no-op instead of clobbering the winner's link,
+    -- but without checking FOUND, the losing call would still fall through
+    -- and update ITS inviter's partner_id below regardless — producing a
+    -- one-sided pairing where the inviter thinks they're linked to someone
+    -- whose own row actually points elsewhere. Abort before touching the
+    -- inviter if this invitee's side didn't actually get claimed.
+    insert into public.users (id, name, partner_id)
+    values (v_invitee_id, 'New User', p_inviter_id)
+    on conflict (id) do update
+        set partner_id = excluded.partner_id
+        where public.users.partner_id is null
+    returning * into v_invitee;
+
+    if not found then
+        raise exception 'You already have a partner';
+    end if;
+
+    update public.users set partner_id = v_invitee_id where id = p_inviter_id;
+
+    -- Return the invitee's resulting row directly rather than leaving the
+    -- caller to wait for it via a realtime subscription, whose channel can
+    -- still be establishing when this transaction commits and would then
+    -- miss this one-time event entirely.
+    return v_invitee;
+end;
+$$;
+
+grant execute on function public.accept_invite(uuid) to authenticated;
+
+-- --- Realtime ---
+-- postgres_changes subscriptions (used by SupabaseDataService for live
+-- partner/problem sync) only fire for tables added to this publication.
+-- Without this, onUserSnapshot/onPartnerSnapshot/onProblemsSnapshot only
+-- ever see their initial fetch — inserts and updates from the other
+-- participant never arrive.
+alter publication supabase_realtime add table public.users;
+alter publication supabase_realtime add table public.problems;

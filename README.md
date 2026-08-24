@@ -12,7 +12,7 @@ The Skeptical Wombat is a web application designed to help partners navigate dis
 
 - **AI-Powered Analysis**: Uses Google Gemini with LangChain for sophisticated prompting
 - **Multi-Phase Problem Solving**: Structured approach to conflict resolution
-- **Real-time Collaboration**: Firebase-powered partner synchronization
+- **Real-time Collaboration**: Supabase-powered partner synchronization
 - **The Skeptical Wombat Persona**: Blunt, witty, and insightful AI feedback
 - **State Management**: Centralized state machine for predictable interactions
 - **Multi-Platform Deployment**: Ready for GitHub Pages, Google Cloud, and Vercel
@@ -21,9 +21,9 @@ The Skeptical Wombat is a web application designed to help partners navigate dis
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 22+ (required by `@supabase/supabase-js`)
 - npm or yarn
-- Firebase project (for backend)
+- Supabase project (for backend) — run the migration in `supabase/migrations/0001_init.sql`
 - Google Gemini API key
 
 ### Installation
@@ -46,7 +46,8 @@ The Skeptical Wombat is a web application designed to help partners navigate dis
    
    Edit `.env` and add your credentials:
    ```bash
-   VITE_FIREBASE_CONFIG='{"apiKey":"your-api-key","authDomain":"your-project.firebaseapp.com","projectId":"your-project-id","storageBucket":"your-project.appspot.com","messagingSenderId":"123456789","appId":"your-app-id"}'
+   VITE_SUPABASE_URL="https://your-project.supabase.co"
+   VITE_SUPABASE_ANON_KEY="your-supabase-anon-key"
    VITE_GEMINI_API_KEY="your-gemini-api-key"
    ```
 
@@ -73,9 +74,11 @@ src/
 ├── context/            # React context providers
 ├── hooks/              # Custom React hooks
 ├── services/           # External service integrations
-│   ├── ai.ts          # Enhanced AI service with LangChain
-│   ├── ai.test.ts     # AI service tests
-│   └── firebase.ts    # Firebase integration
+│   ├── ai.ts                  # Gemini/LangChain AI service
+│   ├── ai.test.ts             # AI service tests
+│   ├── DataService.ts         # Backend seam (interface) — see below
+│   ├── SupabaseDataService.ts # Real Supabase implementation of DataService
+│   └── FakeDataService.ts     # In-memory implementation, used in tests
 ├── state/              # State management
 │   └── problemMachine.ts # State machine for problem workflow
 ├── types/              # TypeScript type definitions
@@ -142,8 +145,8 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions.
 
 - **Frontend**: React 18 + TypeScript + Vite
 - **AI**: Google Gemini + LangChain
-- **Backend**: Firebase (Authentication + Firestore)
-- **Testing**: Vitest
+- **Backend**: Supabase (Auth + Postgres, behind a `DataService` seam — see `src/services/DataService.ts`)
+- **Testing**: Vitest + React Testing Library
 - **Deployment**: Multi-platform (GitHub Pages, Vercel, Google Cloud)
 
 ## 🤝 Contributing
@@ -163,7 +166,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - Google Gemini for AI capabilities
-- Firebase for real-time backend
+- Supabase for the backend (Auth, Postgres, Realtime)
 - LangChain for enhanced prompting
 - The open-source community for amazing tools
 
