@@ -96,7 +96,7 @@ export class SupabaseDataService implements DataService {
             const { data, error } = await this.client.from('users').select('*').eq('id', uid).maybeSingle();
             if (cancelled) return;
             if (error) {
-                console.error(`Failed to fetch user ${uid} (attempt ${attempt + 1}):`, error);
+                console.error(`Failed to fetch user (attempt ${attempt + 1}):`, uid, error);
                 // A failed query is not the same as "no such user" — maybeSingle()
                 // already reports a genuinely missing row as {data: null, error: null}.
                 // Emitting null on a real query failure previously made AppContext
@@ -154,7 +154,7 @@ export class SupabaseDataService implements DataService {
             if (error) {
                 // Don't let a transient failure present as "you have zero
                 // problems" — that would blow away currentProblem in AppContext.
-                console.error(`Failed to fetch problems for ${uid}:`, error);
+                console.error('Failed to fetch problems for user:', uid, error);
                 return;
             }
             callback((data ?? []).map(mapProblemRow));
