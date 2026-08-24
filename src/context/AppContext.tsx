@@ -52,10 +52,12 @@ export const AppProvider = ({ dataService, children }: { dataService: DataServic
     const [isAiLoading, setIsAiLoading] = useState<string | null>(null);
     const [notification, setNotification] = useState({ show: false, message: '', type: 'info', duration: 4000 });
 
-    // Lets the problems-list effect below read the latest currentProblem
-    // without depending on the object itself — see that effect for why.
+    // Lets the problems-list effect below read the latest currentProblem and
+    // isAiLoading without depending on either — see that effect for why.
     const currentProblemRef = useRef(currentProblem);
     useEffect(() => { currentProblemRef.current = currentProblem; }, [currentProblem]);
+    const isAiLoadingRef = useRef(isAiLoading);
+    useEffect(() => { isAiLoadingRef.current = isAiLoading; }, [isAiLoading]);
 
     const getAIAnalysis = useCallback(async (problem: Problem) => {
         setIsAiLoading('verdict');
@@ -179,14 +181,21 @@ export const AppProvider = ({ dataService, children }: { dataService: DataServic
     }, [dataService]);
 
     // --- Problems list ---
-    // Deliberately depends on currentProblem?.id, NOT currentProblem itself.
-    // The callback calls setCurrentProblem(updatedCurrent) with a freshly
-    // .find()'d object every time it fires — a new reference even when
-    // nothing changed. Depending on the whole object here would re-run this
-    // effect on every emission, tearing down and recreating the subscription,
-    // whose initial fetch fires setCurrentProblem again, forming a resubscribe
-    // loop that never settles. currentProblemRef (kept in sync above) lets the
-    // callback read the latest selection without that dependency.
+    // Deliberately depends on currentProblem?.id, not currentProblem itself,
+    // and not isAiLoading at all. Two independent reasons:
+    // 1. The callback calls setCurrentProblem(updatedCurrent) with a freshly
+    //    .find()'d object every time it fires — a new reference even when
+    //    nothing changed. Depending on the whole object would re-run this
+    //    effect on every emission, tearing down and recreating the
+    //    subscription, whose initial fetch fires setCurrentProblem again,
+    //    forming a resubscribe loop that never settles.
+    // 2. isAiLoading changes on every AI action (translation, verdict,
+    //    brainstorm, wager, ...) — depending on it meant a fresh Supabase
+    //    realtime channel + full problems refetch on every single one of
+    //    those, pure avoidable churn with a small window to miss an update
+    //    between unsubscribe and resubscribe.
+    // currentProblemRef/isAiLoadingRef (kept in sync above) let the callback
+    // read the latest values without either as a dependency.
     useEffect(() => {
         if (!user?.uid) return;
         const unsubscribe = dataService.onProblemsSnapshot(user.uid, (fetchedProblems) => {
@@ -196,14 +205,14 @@ export const AppProvider = ({ dataService, children }: { dataService: DataServic
                 const updatedCurrent = fetchedProblems.find((p) => p.id === current.id);
                 if (updatedCurrent) {
                     setCurrentProblem(updatedCurrent);
-                    if (updatedCurrent.status === 'ai_review' && !updatedCurrent.ai_analysis && !isAiLoading) {
+                    if (updatedCurrent.status === 'ai_review' && !updatedCurrent.ai_analysis && !isAiLoadingRef.current) {
                         getAIAnalysis(updatedCurrent);
                     }
                 }
             }
         });
         return () => unsubscribe();
-    }, [dataService, user?.uid, currentProblem?.id, isAiLoading, getAIAnalysis]);
+    }, [dataService, user?.uid, currentProblem?.id, getAIAnalysis]);
 
     const handleUpdate = (problemId: string, data: Partial<Problem>) => {
         // Deliberately doesn't rethrow: several callers `await handleUpdate(...)`

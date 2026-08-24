@@ -1,4 +1,4 @@
-import { AppUser, Problem } from '../types';
+import { AppUser, Problem, toJsDate } from '../types';
 import { DataService, Unsubscribe } from './DataService';
 
 /**
@@ -22,9 +22,13 @@ export class FakeDataService implements DataService {
     }
 
     private emitProblems(uid: string) {
+        // Problem.createdAt is string | Date | undefined; toJsDate handles the
+        // first two, and undefined sorts to the epoch rather than producing
+        // an Invalid Date that would make ordering unstable.
+        const time = (p: Problem) => (p.createdAt ? toJsDate(p.createdAt).getTime() : 0);
         const list = [...this.problems.values()]
             .filter((p) => p.participants?.includes(uid))
-            .sort((a, b) => new Date(b.createdAt as string).getTime() - new Date(a.createdAt as string).getTime());
+            .sort((a, b) => time(b) - time(a));
         this.problemsListeners.get(uid)?.forEach((cb) => cb(list));
     }
 
