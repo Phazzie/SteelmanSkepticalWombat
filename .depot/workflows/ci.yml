@@ -30,11 +30,13 @@ jobs:
 
       - name: Build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
+          # Pull requests run this repository's scripts from the pull
+          # request. Real client keys are passed only on a push to main.
+          VITE_SUPABASE_URL: ${{ github.event_name == 'push' && secrets.VITE_SUPABASE_URL || '' }}
+          VITE_SUPABASE_ANON_KEY: ${{ github.event_name == 'push' && secrets.VITE_SUPABASE_ANON_KEY || '' }}
+          VITE_GEMINI_API_KEY: ${{ github.event_name == 'push' && secrets.VITE_GEMINI_API_KEY || '' }}
         run: |
-          # Empty secrets stay empty until they are re-entered in Depot.
+          # Empty values stay empty until the secrets are re-entered in Depot.
           # Placeholders keep this CI build green. They are not a deploy.
           export VITE_SUPABASE_URL="${VITE_SUPABASE_URL:-https://placeholder.supabase.co}"
           export VITE_SUPABASE_ANON_KEY="${VITE_SUPABASE_ANON_KEY:-placeholder-anon-key}"
@@ -42,7 +44,10 @@ jobs:
           npm run build
 
   ai-review:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    concurrency:
+      group: ai-review-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     runs-on: depot-ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -52,10 +57,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
 
       - name: Pin the Origin CLI
         run: |
@@ -83,4 +84,22 @@ jobs:
           XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_BASE_REF: ${{ github.base_ref }}
-        run: node scripts/ai-review.mjs
+          REVIEW_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # The secret is only visible to this step. Execute the script
+          # stored on the base branch, not the copy from the pull request.
+          # Skip until that file exists rather than running untrusted code.
+          base="${GITHUB_BASE_REF:-main}"
+          case "$base" in
+            *[!A-Za-z0-9._/-]*|*..*)
+              echo "AI review failed: base ref is not a branch name"
+              exit 1
+              ;;
+          esac
+          if ! git cat-file -e "origin/${base}:scripts/ai-review.mjs" 2>/dev/null; then
+            echo "AI review skipped: scripts/ai-review.mjs is not on origin/${base} yet"
+            exit 0
+          fi
+          dest="${RUNNER_TEMP:-/tmp}/ai-review.mjs"
+          git show "origin/${base}:scripts/ai-review.mjs" > "$dest"
+          node "$dest"

@@ -39,14 +39,22 @@ export function clipDiff(diff) {
   return `${text.slice(0, DIFF_CAP)}\n\n[diff truncated]`;
 }
 
+export function incompleteReviewNote(diff) {
+  const text = String(diff ?? "").trim();
+  if (text.length <= DIFF_CAP) return "";
+  return "This review is incomplete. The diff was longer than 14000 characters, and only the start was sent.";
+}
+
 export function reviewPrompt(diff) {
-  return [
+  const lines = [
     "You are reviewing a pull request for The Skeptical Wombat, a web app that helps partners navigate disagreements with blunt analysis.",
     "Comment only on real bugs, security issues (client-exposed keys, auth, data leaks), or a broken conflict-flow state.",
     "Skip style nits. Use short paragraphs. If nothing is wrong, say so in one sentence.",
-    "",
-    clipDiff(diff),
-  ].join("\n");
+  ];
+  const incomplete = incompleteReviewNote(diff);
+  if (incomplete) lines.push(incomplete);
+  lines.push("", clipDiff(diff));
+  return lines.join("\n");
 }
 
 function pullRequestNumber(env) {
@@ -60,8 +68,17 @@ function pullRequestNumber(env) {
   }
 }
 
+function safeRef(name) {
+  const ref = String(name || "main");
+  if (!/^[A-Za-z0-9._/-]+$/.test(ref)) return "";
+  const parts = ref.split("/");
+  if (parts.some((part) => part === "" || part === "." || part === "..")) return "";
+  return ref;
+}
+
 function diffAgainstBase(env) {
-  const base = env.GITHUB_BASE_REF || env.BASE_REF || "main";
+  const base = safeRef(env.GITHUB_BASE_REF || env.BASE_REF || "main");
+  if (!base) throw new Error("AI review failed: base ref is not a branch name");
   try {
     execFileSync("/usr/bin/git", ["fetch", "origin", base, "--depth", "50"], { stdio: "ignore" });
   } catch {
@@ -73,7 +90,7 @@ function diffAgainstBase(env) {
       maxBuffer: 8_000_000,
     });
   } catch {
-    return execFileSync("/usr/bin/git", ["diff", "HEAD~1"], { encoding: "utf8", maxBuffer: 8_000_000 });
+    throw new Error(`AI review failed: could not diff origin/${base}...HEAD`);
   }
 }
 
@@ -178,6 +195,7 @@ async function publish(env, body) {
     }
     logLine(error instanceof Error ? error.message : error);
     logLine("Origin comment failed. The review is in the log above.");
+    throw error;
   }
 }
 
@@ -193,7 +211,11 @@ async function main() {
     return;
   }
   const note = await askGrok(process.env.XAI_API_KEY.trim(), diff);
-  const body = `${MARKER}\n**Grok review**\n\n${note}`;
+  const sha = String(process.env.REVIEW_SHA || "").trim();
+  const shaLine = /^[0-9a-f]{7,40}$/i.test(sha) ? `\nReviewed \`${sha}\`.` : "";
+  const incomplete = incompleteReviewNote(diff);
+  const banner = incomplete ? `\n\n${incomplete}` : "";
+  const body = `${MARKER}\n**Grok review**${shaLine}${banner}\n\n${note}`;
   await publish(process.env, body);
 }
 

@@ -10,21 +10,21 @@ Depot does not import Actions secrets. Re-enter the values below in the Depot pr
 | --- | --- | --- | --- |
 | `.github/workflows/deploy-pages.yml` | `build` | `.depot/workflows/ci.yml` job `verify` | `npm ci`, `npm run lint`, `npm run type-check`, `npm run test:run`, `npm run build` |
 | `.github/workflows/deploy-pages.yml` | `deploy` | none | GitHub Pages only. Dropped. |
-| (none) | (none) | `.depot/workflows/ci.yml` job `ai-review` | `npm ci`, `node scripts/ai-review.mjs` on pull requests |
+| (none) | (none) | `.depot/workflows/ci.yml` job `ai-review` | base-branch `scripts/ai-review.mjs` on same-repo pull requests |
 
 Triggers match the Pages workflow's intent: every pull request, and pushes to `main`.
 
 `verify` runs the repo's real scripts. The Pages workflow only ran `npm run test:run` and `npm run build`. Lint and type-check were already scripts in `package.json`; Depot runs them too. Installs stay locked to `package-lock.json` via `npm ci`. Node is 22, the same major the Pages workflow and `Dockerfile` use.
 
-The build step reads `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_GEMINI_API_KEY` from Depot secrets when they are set. When a secret is empty, the step exports a placeholder (`https://placeholder.supabase.co`, `placeholder-anon-key`, `placeholder-gemini-key`) so `npm run build` still produces a bundle. Those placeholders are not a hosting config. Vite inlines `VITE_*` at build time, so a production host (Cloud Run build args, or whatever replaces Pages) needs the real values at the build that ships.
+The build step reads `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_GEMINI_API_KEY` from Depot secrets only on a push to `main`. Pull requests run the branch's own `package.json` scripts, so those jobs get placeholders (`https://placeholder.supabase.co`, `placeholder-anon-key`, `placeholder-gemini-key`) and never the real values. An empty secret on `main` uses the same placeholders, which keeps the build green and is not a deploy. Vite inlines `VITE_*` at build time, so a production host (Cloud Run build args, or whatever replaces Pages) needs the real values at the build that ships.
 
-`ai-review` runs only on `pull_request`. `scripts/ai-review.mjs` calls the xAI chat API (`grok-4.5`) with `XAI_API_KEY`, then posts with:
+`ai-review` runs on `pull_request` only when the head repository is this repository. Forks do not get `XAI_API_KEY`. The job checks out the pull request for the diff, then runs `scripts/ai-review.mjs` from the base branch. Until that file is on the base branch, the job prints a skip line and exits 0 instead of executing the pull request's copy. A newer push cancels the in-progress review for that pull request. `scripts/ai-review.mjs` calls the xAI chat API (`grok-4.5`) with `XAI_API_KEY`, then posts with:
 
 ```bash
 origin pr comment "$PR_NUMBER" --body-file "$FILE" --edit-last --create-if-none
 ```
 
-If `XAI_API_KEY` is unset, or the `origin` CLI is missing, the script prints the reason (and the review text, once it has one) to the job log and exits 0. Log lines are flattened so a review cannot forge extra log records. An empty diff also exits 0. A failed xAI response fails the job.
+If `XAI_API_KEY` is unset, or the `origin` CLI is missing, the script prints the reason (and the review text, once it has one) to the job log and exits 0. A failed comment post, a failed xAI response, or a missing base diff fails the job. The script does not fall back to `git diff HEAD~1`. Log lines are flattened so a review cannot forge extra log records. An empty diff exits 0. A diff longer than 14000 characters is labeled incomplete in the prompt and in the comment; only the start is sent.
 
 The script does not search `PATH`. It runs `/usr/bin/git` and an `origin` binary at one of `/usr/local/bin/origin`, `/usr/bin/origin`, `/root/.local/bin/origin`, `/home/runner/.local/bin/origin`, or `/github/home/.local/bin/origin` (the last three are where `install.sh` places the CLI). The job copies a runner-provided `origin` onto `/usr/local/bin/origin` when it is only available somewhere else. The posted comment still uses the original line breaks.
 
@@ -45,9 +45,9 @@ These exist only to publish `./dist` to GitHub Pages. Depot has no Pages environ
 
 | Secret | Used by | Notes |
 | --- | --- | --- |
-| `VITE_SUPABASE_URL` | `verify` build | Same value as the Actions secret. Public project URL. |
-| `VITE_SUPABASE_ANON_KEY` | `verify` build | Same value as the Actions secret. Public anon key. |
-| `VITE_GEMINI_API_KEY` | `verify` build | Same value as the Actions secret. Still inlined into the client bundle (see `DEPLOYMENT.md`). |
-| `XAI_API_KEY` | `ai-review` | New. Not an Actions secret today. Without it, review skips and the job stays green. |
+| `VITE_SUPABASE_URL` | `verify` build on push to `main` | Same value as the Actions secret. Public project URL. Pull request builds use a placeholder. |
+| `VITE_SUPABASE_ANON_KEY` | `verify` build on push to `main` | Same value as the Actions secret. Public anon key. Pull request builds use a placeholder. |
+| `VITE_GEMINI_API_KEY` | `verify` build on push to `main` | Same value as the Actions secret. Still inlined into the client bundle (see `DEPLOYMENT.md`). Pull request builds use a placeholder. |
+| `XAI_API_KEY` | `ai-review` | New. Not an Actions secret today. Same-repo pull requests only, and only the base-branch script sees it. Without it, review skips and the job stays green. |
 
 `GITHUB_TOKEN` is not required. The review posts through the Origin CLI, which the Depot runner provides.
