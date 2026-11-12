@@ -24,7 +24,9 @@ The build step reads `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_GE
 origin pr comment "$PR_NUMBER" --body-file "$FILE" --edit-last --create-if-none
 ```
 
-If `XAI_API_KEY` is unset, or the `origin` CLI is missing, the script prints the reason (and the review text, once it has one) to the job log and exits 0. An empty diff also exits 0. A failed xAI response fails the job.
+If `XAI_API_KEY` is unset, or the `origin` CLI is missing, the script prints the reason (and the review text, once it has one) to the job log and exits 0. Log lines are flattened so a review cannot forge extra log records. An empty diff also exits 0. A failed xAI response fails the job.
+
+The script does not search `PATH`. It runs `/usr/bin/git` and an `origin` binary at one of `/usr/local/bin/origin`, `/usr/bin/origin`, `/root/.local/bin/origin`, `/home/runner/.local/bin/origin`, or `/github/home/.local/bin/origin` (the last three are where `install.sh` places the CLI). The job copies a runner-provided `origin` onto `/usr/local/bin/origin` when it is only available somewhere else. The posted comment still uses the original line breaks.
 
 ## GitHub-only, dropped on detach
 

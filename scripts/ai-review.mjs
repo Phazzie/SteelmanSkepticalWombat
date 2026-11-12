@@ -7,11 +7,26 @@
  * missing.
  */
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const MARKER = "<!-- skeptical-wombat-ai-review -->";
 const DIFF_CAP = 14_000;
+// Fixed locations only. The workflow pins a PATH-provided binary onto
+// /usr/local/bin/origin before this script runs. install.sh uses ~/.local/bin.
+const ORIGIN_BINARIES = [
+  "/usr/local/bin/origin",
+  "/usr/bin/origin",
+  "/root/.local/bin/origin",
+  "/home/runner/.local/bin/origin",
+  "/github/home/.local/bin/origin",
+];
+
+function logLine(value) {
+  console.log(String(value ?? "").replace(/\r\n|[\r\n]/g, "\\n"));
+}
 
 export function reviewDecision(env) {
   if (!env.XAI_API_KEY?.trim()) return { action: "skip", reason: "XAI_API_KEY is not set" };
@@ -48,17 +63,17 @@ function pullRequestNumber(env) {
 function diffAgainstBase(env) {
   const base = env.GITHUB_BASE_REF || env.BASE_REF || "main";
   try {
-    execFileSync("git", ["fetch", "origin", base, "--depth", "50"], { stdio: "ignore" });
+    execFileSync("/usr/bin/git", ["fetch", "origin", base, "--depth", "50"], { stdio: "ignore" });
   } catch {
     // The checkout may already contain the base.
   }
   try {
-    return execFileSync("git", ["diff", `origin/${base}...HEAD`], {
+    return execFileSync("/usr/bin/git", ["diff", `origin/${base}...HEAD`], {
       encoding: "utf8",
       maxBuffer: 8_000_000,
     });
   } catch {
-    return execFileSync("git", ["diff", "HEAD~1"], { encoding: "utf8", maxBuffer: 8_000_000 });
+    return execFileSync("/usr/bin/git", ["diff", "HEAD~1"], { encoding: "utf8", maxBuffer: 8_000_000 });
   }
 }
 
@@ -97,66 +112,84 @@ function isMissingCli(error) {
   return error?.code === "ENOENT";
 }
 
-function originOnPath() {
-  try {
-    execFileSync("origin", ["--version"], { stdio: "ignore" });
-    return true;
-  } catch (error) {
-    return !isMissingCli(error);
+function originBinary() {
+  return ORIGIN_BINARIES.find((binary) => existsSync(binary)) ?? "";
+}
+
+function runOrigin(binary, args) {
+  if (binary === "/usr/local/bin/origin") {
+    return execFileSync("/usr/local/bin/origin", args, { stdio: "inherit" });
   }
+  if (binary === "/usr/bin/origin") {
+    return execFileSync("/usr/bin/origin", args, { stdio: "inherit" });
+  }
+  if (binary === "/root/.local/bin/origin") {
+    return execFileSync("/root/.local/bin/origin", args, { stdio: "inherit" });
+  }
+  if (binary === "/home/runner/.local/bin/origin") {
+    return execFileSync("/home/runner/.local/bin/origin", args, { stdio: "inherit" });
+  }
+  return execFileSync("/github/home/.local/bin/origin", args, { stdio: "inherit" });
 }
 
 function publishOnOrigin(number, body) {
-  const file = execFileSync("mktemp", { encoding: "utf8" }).trim();
+  const binary = originBinary();
+  if (!binary) {
+    const missing = new Error("origin CLI is not installed");
+    missing.code = "ENOENT";
+    throw missing;
+  }
+  const dir = mkdtempSync(join(tmpdir(), "ai-review-"));
+  const file = join(dir, "comment.md");
   try {
     writeFileSync(file, body);
-    execFileSync(
-      "origin",
-      ["pr", "comment", String(number), "--body-file", file, "--edit-last", "--create-if-none"],
-      { stdio: "inherit" },
-    );
+    runOrigin(binary, [
+      "pr",
+      "comment",
+      String(number),
+      "--body-file",
+      file,
+      "--edit-last",
+      "--create-if-none",
+    ]);
   } finally {
-    try {
-      execFileSync("rm", ["-f", file]);
-    } catch {
-      /* the temp file is only the review text */
-    }
+    rmSync(dir, { recursive: true, force: true });
   }
 }
 
 async function publish(env, body) {
   const number = pullRequestNumber(env);
-  if (commentDestination(env, originOnPath()) === "stdout") {
-    console.log(body);
+  if (commentDestination(env, Boolean(originBinary())) === "stdout") {
+    logLine(body);
     if (!number) {
-      console.log("AI review printed locally. Set PR_NUMBER to comment on the Origin pull request.");
+      logLine("AI review printed locally. Set PR_NUMBER to comment on the Origin pull request.");
     } else {
-      console.log("AI review printed to the log. origin CLI is not installed.");
+      logLine("AI review printed to the log. origin CLI is not installed.");
     }
     return;
   }
   try {
     publishOnOrigin(number, body);
   } catch (error) {
-    console.log(body);
+    logLine(body);
     if (isMissingCli(error)) {
-      console.log("AI review printed to the log. origin CLI is not installed.");
+      logLine("AI review printed to the log. origin CLI is not installed.");
       return;
     }
-    console.error(error instanceof Error ? error.message : error);
-    console.log("Origin comment failed. The review is in the log above.");
+    logLine(error instanceof Error ? error.message : error);
+    logLine("Origin comment failed. The review is in the log above.");
   }
 }
 
 async function main() {
   const decision = reviewDecision(process.env);
   if (decision.action === "skip") {
-    console.log(`AI review skipped: ${decision.reason}`);
+    logLine(`AI review skipped: ${decision.reason}`);
     return;
   }
   const diff = diffAgainstBase(process.env);
   if (!diff.trim()) {
-    console.log("AI review skipped: empty diff");
+    logLine("AI review skipped: empty diff");
     return;
   }
   const note = await askGrok(process.env.XAI_API_KEY.trim(), diff);
@@ -167,7 +200,7 @@ async function main() {
 const isDirect = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isDirect) {
   main().catch((error) => {
-    console.error(error instanceof Error ? error.message : error);
+    console.error(String(error instanceof Error ? error.message : error).replace(/\r\n|[\r\n]/g, "\\n"));
     process.exit(1);
   });
 }
