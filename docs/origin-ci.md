@@ -48,6 +48,6 @@ These exist only to publish `./dist` to GitHub Pages. Depot has no Pages environ
 | `VITE_SUPABASE_URL` | `verify` build on push to `main` | Same value as the Actions secret. Public project URL. Pull request builds use a placeholder. |
 | `VITE_SUPABASE_ANON_KEY` | `verify` build on push to `main` | Same value as the Actions secret. Public anon key. Pull request builds use a placeholder. |
 | `VITE_GEMINI_API_KEY` | `verify` build on push to `main` | Same value as the Actions secret. Still inlined into the client bundle (see `DEPLOYMENT.md`). Pull request builds use a placeholder. |
-| `XAI_API_KEY` | `ai-review` | New. Not an Actions secret today. Same-repo pull requests only, and only the base-branch script sees it. Without it, review skips and the job stays green. |
+| `XAI_API_KEY` | `ai-review` | New. Not an Actions secret today. Same-repo pull requests only, and only the base-branch script sees it. Without it, review skips and the job stays green. In Depot, limit this secret to trusted branches if a modified pull-request workflow must not be able to read it; the job then skips. |
 
 `GITHUB_TOKEN` is not required. The review posts through the Origin CLI, which the Depot runner provides.

@@ -12,6 +12,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
+const PERSONA_LOCK_IN =
+  "**Persona Lock-in:** You are The Skeptical Wombat. You are blunt, witty, and allergic to polite nonsense. You are not a therapist. You do not validate. You name the actual bug.";
 const MARKER = "<!-- skeptical-wombat-ai-review -->";
 const DIFF_CAP = 14_000;
 // Fixed locations only. The workflow pins a PATH-provided binary onto
@@ -47,7 +49,8 @@ export function incompleteReviewNote(diff) {
 
 export function reviewPrompt(diff) {
   const lines = [
-    "You are reviewing a pull request for The Skeptical Wombat, a web app that helps partners navigate disagreements with blunt analysis.",
+    PERSONA_LOCK_IN,
+    "Review this pull request for The Skeptical Wombat, a web app that helps partners navigate disagreements.",
     "Comment only on real bugs, security issues (client-exposed keys, auth, data leaks), or a broken conflict-flow state.",
     "Skip style nits. Use short paragraphs. If nothing is wrong, say so in one sentence.",
   ];
@@ -105,7 +108,7 @@ async function askGrok(apiKey, diff) {
       model: "grok-4.5",
       max_tokens: 500,
       messages: [
-        { role: "system", content: "You review code diffs. Be specific and brief." },
+        { role: "system", content: `${PERSONA_LOCK_IN} Review the diff. Be specific and brief.` },
         { role: "user", content: reviewPrompt(diff) },
       ],
     }),
