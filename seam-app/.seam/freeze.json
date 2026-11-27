@@ -1,0 +1,13 @@
+{
+  "frozenAt": "2026-11-27T13:05:13.519Z",
+  "files": {
+    "contracts/crossing.ts": "b4c5aa77e4f4b1e6",
+    "contracts/wombat.ts": "b7216f7fa7837041",
+    "plan/PLAN.md": "a5793dec3b85467d",
+    "tests/api.test.ts": "aabb3ec8a1c52305",
+    "tests/rules.test.ts": "4cf80627f556a2f1",
+    "tests/sniffer.test.ts": "def1953da9a77ce6",
+    "tests/storage.test.ts": "2e1ced216170e4a6",
+    "tests/wombatClient.test.ts": "0ed7e04e31ee8cba"
+  }
+}
