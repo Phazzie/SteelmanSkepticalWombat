@@ -148,6 +148,12 @@ export default function App() {
         loading: false
     });
     const [saveOk, setSaveOk] = useState(loaded.ok);
+    const [slam, setSlam] = useState<{ kind: 'admitted' | 'denied' | 'customs'; word: string; sub: string } | null>(null);
+    useEffect(() => {
+        if (!slam) return;
+        const t = setTimeout(() => setSlam(null), 1400);
+        return () => clearTimeout(t);
+    }, [slam]);
     const latest = useRef(crossings);
     latest.current = crossings;
 
@@ -174,7 +180,18 @@ export default function App() {
             const c = latest.current.find((x) => x.id === id);
             if (!c) return 'That crossing is gone.';
             try {
-                commit(apply(c, a, new Date()));
+                const next = apply(c, a, new Date());
+                commit(next);
+                if (a.type === 'STAMP') {
+                    const writer = a.by === 'A' ? 'B' : 'A';
+                    setSlam(
+                        a.verdict === 'admitted'
+                            ? { kind: 'admitted', word: 'ADMITTED', sub: `${c.names[writer]} may enter the Republic of ${c.names[a.by]}.` }
+                            : { kind: 'denied', word: 'DENIED', sub: `${c.names[writer]} is refused entry. Reason on file.` }
+                    );
+                } else if (next.phase === 'ratified' && c.phase !== 'ratified') {
+                    setSlam({ kind: 'customs', word: 'RATIFIED', sub: 'Treaty in force. Review in seven days.' });
+                }
                 return null;
             } catch (e) {
                 if (e instanceof RuleError) return e.message;
@@ -288,7 +305,9 @@ export default function App() {
             <nav className="topbar no-print" aria-label="Border control">
                 <button type="button" className="brand" onClick={() => setOpenId(null)}>
                     <img src="/officer.jpg" alt="" width={28} height={28} />
-                    <span>Wombat Border Control</span>
+                    <span>
+                        <span className="wide-only">Wombat </span>Border Control
+                    </span>
                 </button>
                 <button type="button" className="hotline-btn" onClick={callHotline}>
                     Diplomatic incident
@@ -308,6 +327,14 @@ export default function App() {
                 </ol>
             )}
             <main>{body}</main>
+            {slam && (
+                <div className={`slam slam-${slam.kind}`} role="status" aria-live="assertive" onClick={() => setSlam(null)}>
+                    <Stamp kind={slam.kind} tilt={-12}>
+                        {slam.word}
+                    </Stamp>
+                    <p>{slam.sub}</p>
+                </div>
+            )}
             {hotline.open && (
                 <div className="modal" role="dialog" aria-modal="true" aria-labelledby="hotline-title">
                     <div className="modal-card">
@@ -370,6 +397,14 @@ function FrontDesk({
                     <br />
                     until they stamp your visa.
                 </p>
+                <a className="btn btn-big btn-cover" href="#open">
+                    Open a crossing
+                </a>
+                {crossings.length > 0 && (
+                    <a className="cover-link" href="#archive">
+                        {crossings.length} previous crossing{crossings.length === 1 ? '' : 's'}
+                    </a>
+                )}
             </section>
 
             <Page no="ii" title="Officer on Duty" names={null} code="WOMBAT<W<BADGE<0001">
@@ -398,6 +433,7 @@ function FrontDesk({
                 <p className="small">One phone, two people, same room. Private desks hand the phone over. Nothing leaves this device except what the officer is asked to read.</p>
             </Page>
 
+            <span id="open" className="anchor" />
             <Page no="iii" title="Open a Crossing" names={null} code="NEW<CROSSING">
                 <form
                     className="new-crossing"
@@ -440,6 +476,7 @@ function FrontDesk({
                 </form>
             </Page>
 
+            <span id="archive" className="anchor" />
             <Page no="iv" title="Previous Crossings" names={null} code="ARCHIVE">
                 {!saveOk && (
                     <p className="refused">This browser won’t let us save (private mode?). Crossings vanish when you close the tab.</p>

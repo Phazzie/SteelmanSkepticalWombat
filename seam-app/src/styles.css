@@ -421,7 +421,7 @@ textarea:focus,
     border-radius: 8px;
     transform: rotate(var(--tilt, -8deg));
     filter: url(#ink);
-    opacity: 0.88;
+    opacity: 0.95;
     mix-blend-mode: multiply;
     animation: thunk 0.32s cubic-bezier(0.2, 1.6, 0.4, 1) both;
     white-space: nowrap;
@@ -453,7 +453,7 @@ textarea:focus,
     }
     to {
         transform: rotate(var(--tilt, -8deg)) scale(1);
-        opacity: 0.88;
+        opacity: 0.95;
     }
 }
 
@@ -757,10 +757,13 @@ textarea:focus,
     padding-left: 12px;
 }
 .treaty-seal {
-    position: absolute;
-    right: 14px;
-    top: 52px;
-    pointer-events: none;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+.treaty-seal .stamp {
+    font-size: 34px;
+    padding: 18px 22px;
 }
 .review {
     margin: 18px 0;
@@ -829,6 +832,9 @@ textarea:focus,
     .brand span {
         font-size: 15px;
     }
+    .wide-only {
+        display: none;
+    }
     .hotline-btn {
         font-size: 11px;
         padding: 5px 10px;
@@ -859,4 +865,83 @@ textarea:focus,
     .xray-scanning::after {
         animation: none;
     }
+}
+
+/* ---------- round 1 additions ---------- */
+.btn-cover {
+    margin-top: 26px;
+    background: var(--gold);
+    color: var(--oxblood-2);
+    border-color: var(--gold);
+    text-decoration: none;
+    text-shadow: none;
+}
+.btn-cover:hover {
+    background: #f1d488;
+    border-color: #f1d488;
+    color: var(--oxblood-2);
+}
+.cover-link {
+    margin-top: 12px;
+    color: #e9d9a6;
+    font-size: 14px;
+}
+.anchor {
+    display: block;
+    position: relative;
+    top: -12px;
+}
+.slam {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: 16px;
+    background: rgba(238, 241, 228, 0.82);
+    backdrop-filter: blur(2px);
+    text-align: center;
+    animation: fade 1.4s ease both;
+}
+.slam .stamp {
+    font-size: clamp(36px, 11vw, 120px);
+    max-width: 92vw;
+    border-width: 10px;
+    padding: 8px 28px;
+    border-radius: 18px;
+    animation-duration: 0.28s;
+}
+.slam p {
+    font-family: var(--type);
+    font-weight: 700;
+    font-size: 18px;
+    max-width: 420px;
+    margin: 0;
+}
+@keyframes fade {
+    0%,
+    80% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+.stamp-page {
+    margin: 18px 0;
+    padding: 14px;
+    border: 1px dashed rgba(28, 36, 32, 0.3);
+}
+.stamp-scatter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px 14px;
+    padding: 10px 4px;
+}
+.stamp-scatter .stamp {
+    font-size: 15px;
+    white-space: normal;
 }

@@ -500,7 +500,7 @@ export function RatifiedDesk({ c, act }: DeskProps) {
                     between the Republic of <b>{c.names.A}</b> and the Republic of <b>{c.names.B}</b>
                 </p>
                 <p className="treaty-whereas">
-                    <b>Whereas</b> the parties disputed “{c.dispute.text}”, and each stated the other’s side well enough
+                    <b>Whereas</b> the parties disputed “{c.dispute.text.replace(/[.!?]+$/, '')}”, and each stated the other’s side well enough
                     to be admitted ({c.names.A}: {c.visas.A.length} {c.visas.A.length === 1 ? 'try' : 'tries'},{' '}
                     {c.names.B}: {c.visas.B.length} {c.visas.B.length === 1 ? 'try' : 'tries'}),
                 </p>
@@ -522,6 +522,27 @@ export function RatifiedDesk({ c, act }: DeskProps) {
                     </Stamp>
                 </div>
             </div>
+            <section className="stamp-page" aria-label="Stamps in this passport">
+                <span className="tag">Visa pages: every stamp this crossing earned</span>
+                <div className="stamp-scatter">
+                    <Stamp kind="admitted" tilt={-9}>
+                        DISPUTE AGREED
+                    </Stamp>
+                    <Stamp kind="customs" tilt={7}>
+                        CUSTOMS · 2 BAGS
+                    </Stamp>
+                    {(['A', 'B'] as const).flatMap((s) =>
+                        c.visas[s].map((v, i) => (
+                            <Stamp key={`${s}${i}`} kind={v.verdict === 'denied' ? 'denied' : 'admitted'} tilt={((i * 37 + (s === 'A' ? 11 : 23)) % 24) - 12}>
+                                {v.verdict === 'denied' ? 'DENIED' : 'ADMITTED'} · {c.names[s]} → {c.names[other(s)]}
+                            </Stamp>
+                        ))
+                    )}
+                    <Stamp kind="customs" tilt={-4}>
+                        RATIFIED {fmtDate(c.updatedAt)}
+                    </Stamp>
+                </div>
+            </section>
             <div className="review">
                 <span className="tag">Treaty review</span>
                 {!open && due && (

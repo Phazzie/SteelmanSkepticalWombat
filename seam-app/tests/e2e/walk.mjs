@@ -142,6 +142,8 @@ async function walk(browser, label, ctxOpts, mode) {
     check(await page.getByText('A denial needs a reason').isVisible(), `[${label}] a denial without a reason is refused`);
     await page.fill('#deny-note', 'That is your complaint, not my side. I want to be thanked, not noticed.');
     await click('Stamp DENIED');
+    await page.getByText('is refused entry').waitFor();
+    await shot('slam-denied');
 
     // rewrite
     await step('Jordan');
@@ -203,7 +205,7 @@ async function walk(browser, label, ctxOpts, mode) {
     await click('Hang up');
 
     // archive
-    await page.getByRole('button', { name: 'Wombat Border Control' }).click();
+    await page.getByRole('button', { name: /Border Control/ }).click();
     check(await page.getByText('RATIFIED').first().isVisible(), `[${label}] archive lists the ratified crossing`);
     await shot('archive');
 
