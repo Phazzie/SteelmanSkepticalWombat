@@ -12,7 +12,7 @@ const walk = (p) => {
 };
 roots.forEach(walk);
 const prints = Object.fromEntries(
-    files.sort().map((f) => [f, createHash('sha256').update(readFileSync(f)).digest('hex').slice(0, 16)])
+    files.sort((a, b) => a.localeCompare(b)).map((f) => [f, createHash('sha256').update(readFileSync(f)).digest('hex').slice(0, 16)])
 );
 const out = '.seam/freeze.json';
 if (process.argv.includes('--check')) {

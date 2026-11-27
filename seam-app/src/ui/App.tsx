@@ -328,7 +328,8 @@ export default function App() {
             )}
             <main>{body}</main>
             {slam && (
-                <div className={`slam slam-${slam.kind}`} role="status" aria-live="assertive" onClick={() => setSlam(null)}>
+                <div className={`slam slam-${slam.kind}`} role="status" aria-live="assertive">
+                    <button type="button" className="slam-dismiss" aria-label="Dismiss" onClick={() => setSlam(null)} />
                     <Stamp kind={slam.kind} tilt={-12}>
                         {slam.word}
                     </Stamp>

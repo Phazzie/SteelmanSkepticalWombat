@@ -906,6 +906,13 @@ textarea:focus,
     text-align: center;
     animation: fade 1.4s ease both;
 }
+.slam-dismiss {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}
 .slam .stamp {
     font-size: clamp(36px, 11vw, 120px);
     max-width: 92vw;

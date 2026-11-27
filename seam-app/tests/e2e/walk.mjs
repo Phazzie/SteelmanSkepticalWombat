@@ -3,6 +3,7 @@
 // and walks a full crossing as a stranger would, at phone and laptop size.
 // SHOTS=dir saves a screenshot of every page.
 import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { mkdirSync } from 'node:fs';
 
@@ -217,7 +218,8 @@ async function walk(browser, label, ctxOpts, mode) {
     await ctx.close();
 }
 
-const server = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort', '--host', '127.0.0.1'], {
+const VITE_BIN = fileURLToPath(new URL('../../node_modules/vite/bin/vite.js', import.meta.url));
+const server = spawn(process.execPath, [VITE_BIN, 'preview', '--port', String(PORT), '--strictPort', '--host', '127.0.0.1'], {
     stdio: 'ignore'
 });
 try {
