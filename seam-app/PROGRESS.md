@@ -12,7 +12,7 @@ once and it's done.
   once *they* stamp your visa ADMITTED (or DENIED, with their reason).
 - **Preview (private, Vercel login):**
   https://wombat-border-control-git-claude-proje-f4c92e-phazzies-projects.vercel.app
-- **PR:** https://github.com/Phazzie/SteelmanSkepticalWombat/pull/74
+- **PR:** https://github.com/Phazzie/SteelmanSkepticalWombat/pull/74 (merged to main)
 - **Honest score: 7/10.** The core mechanic is genuinely better than any earlier version
   (denials with reasons make the steelman step real instead of a formality) and the world
   runs every screen. It loses points because the AI has never been called for real, it's one
@@ -90,3 +90,9 @@ three rounds of screenshot critique.
 - Critique round 2: the slam stamp ran off the side of a phone; the brand wrapped to two
   lines on phones. Fixed. Added the visa-pages stamp collage on the treaty.
 - 13:18: pushed, PR #74, Vercel project created (private), preview building.
+- 13:22: SonarCloud quality gate failed (B security, D reliability). Fixed: the browser walk
+  starts Vite with node and an absolute path instead of `npx` on PATH; the stamp-slam overlay
+  is dismissed by a real button instead of a clickable div; the freeze script sorts with an
+  explicit compare. Tests, build, walk and freeze check all pass again. Gate now passes.
+- Merged PR #74 (squash) once tests, build, CI and the review thread were all clear. The app
+  lives in `seam-app/` on main; the old app at the root is still untouched.
