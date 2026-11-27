@@ -16,8 +16,8 @@ describe('wombat client', () => {
         expect(seen!.url).toBe('/api/wombat');
         expect(JSON.parse(String(seen!.init.body))).toEqual(req);
     });
-    it('C2 off duty on 503 off_duty', async () => {
-        expect(await askWombat(req, reply(503, { error: 'off_duty' }))).toEqual({ status: 'closed', reason: 'off_duty' });
+    it('C2 off duty on 200 { closed: off_duty } (drift 1)', async () => {
+        expect(await askWombat(req, reply(200, { closed: 'off_duty' }))).toEqual({ status: 'closed', reason: 'off_duty' });
     });
     it('C3 network failure and bad bodies become error, never a throw', async () => {
         const boom: Fetcher = async () => {

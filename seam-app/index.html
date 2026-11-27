@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Wombat Border Control · Skeptical Wombat</title>
+        <meta name="description" content="A passport office for arguments. You don't get into their side until they stamp your visa." />
+        <meta name="theme-color" content="#4a1219" />
+        <link rel="icon" href="/officer.jpg" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Cormorant+SC:wght@500;700&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Homemade+Apple&display=swap" rel="stylesheet" />
+    </head>
+    <body>
+        <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+            <filter id="ink">
+                <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4" result="noise" />
+                <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.2 1.35" result="holes" />
+                <feComposite in="SourceGraphic" in2="holes" operator="in" result="speckled" />
+                <feDisplacementMap in="speckled" in2="noise" scale="2.2" />
+            </filter>
+        </svg>
+        <div id="root"></div>
+        <script type="module" src="/src/main.tsx"></script>
+    </body>
+</html>

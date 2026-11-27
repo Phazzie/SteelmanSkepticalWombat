@@ -35,4 +35,7 @@ export type WombatTask = WombatRequest['task'];
 export const WombatResponseSchema = z.object({ text: z.string().min(1) });
 export type WombatResponse = z.infer<typeof WombatResponseSchema>;
 
-export const WombatErrorSchema = z.object({ error: z.enum(['off_duty', 'bad_request', 'provider', 'busy']) });
+/** Drift 1: a server with no key answers 200 with this instead of a 503. */
+export const WombatClosedSchema = z.object({ closed: z.literal('off_duty') });
+
+export const WombatErrorSchema = z.object({ error: z.enum(['bad_request', 'provider', 'busy']) });

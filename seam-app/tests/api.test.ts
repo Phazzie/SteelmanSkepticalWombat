@@ -24,11 +24,11 @@ describe('/api/wombat', () => {
         expect(r2.status).toBe(400);
     });
 
-    it('A2 no key is a 503 off_duty', async () => {
+    it('A2 no key is a 200 { closed: off_duty } (drift 1: no console error on keyless previews)', async () => {
         delete process.env.XAI_API_KEY;
         const r = await call({ task: 'incident' });
-        expect(r.status).toBe(503);
-        expect(await r.json()).toEqual({ error: 'off_duty' });
+        expect(r.status).toBe(200);
+        expect(await r.json()).toEqual({ closed: 'off_duty' });
     });
 
     it('A3 success returns the provider text trimmed, sent with the key as a bearer token', async () => {

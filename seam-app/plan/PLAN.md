@@ -68,16 +68,16 @@ T3 junk JSON loads as empty with `dropped: 1`; T4 a throwing storage returns `ok
 
 ### `src/core/wombatClient.ts` (S4)
 Steps: 1. POST the validated request; 2. on 200, validate and return `{status:'ok', text}`;
-3. on 503 `off_duty` return `{status:'closed', reason:'off_duty'}`; 4. on 429 return
+3. on 200 `{closed:'off_duty'}` return `{status:'closed', reason:'off_duty'}`; 4. on 429 return
 `reason:'busy'`; on anything else (network, 5xx, bad JSON) `reason:'error'`. Never throws.
 Promises: C1 ok text; C2 off duty; C3 network failure → error; C4 429 → busy.
 
 ### `api/wombat.ts` + `api/_lib/prompts.ts` (S5)
 Steps: 1. parse and validate the body with `WombatRequestSchema` (400 on failure);
-2. no `XAI_API_KEY` → 503 `{error:'off_duty'}`; 3. build the task prompt with the persona
+2. no `XAI_API_KEY` → 200 `{closed:'off_duty'}` (drift 1); 3. build the task prompt with the persona
 lock-in first; 4. call xAI with a timeout; 5. return `{text}` trimmed, or 502 when the
 provider fails. The key is never echoed or logged.
-Promises: A1 invalid body → 400; A2 no key → 503 off_duty; A3 success → 200 with the
+Promises: A1 invalid body → 400; A2 no key → 200 closed off_duty; A3 success → 200 with the
 provider text; A4 provider 500 → 502 and the key is not in the body; A5 every prompt starts
 with the persona lock-in and contains the user's text.
 
@@ -85,7 +85,7 @@ with the persona lock-in and contains the user's text.
 Passport cover (home + archive), new crossing form, curtain, one page per phase, treaty,
 incident hotline, lost-luggage error boundary. Promises are checked by the browser walk in
 `tests/e2e/walk.mjs`: E1 a full crossing from cover to ratified treaty with a denial and a
-rewrite; E2 customs closed (503) still lets the crossing finish; E3 a reload resumes where
+rewrite; E2 customs closed (no key) still lets the crossing finish; E3 a reload resumes where
 you were; E4 no console errors; E5 no sideways scroll at 390px.
 
 ## Build order
