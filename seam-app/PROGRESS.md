@@ -74,6 +74,14 @@ three rounds of screenshot critique.
 
 ## Log
 
+- 2026-11-28 16:10 UTC: Trizzy asked for steelman-first: "each player has to first enter the
+  other person's side of the story and the other person has to agree before they get to enter
+  their own." New order: dispute → visa → stamp (until both admitted) → declare → findings →
+  inspection. Logged as drift 2. Still one phone, pass-and-play (no two-device room exists).
+  Added a HELD luggage tag on the visa page and an ADMITTED banner on the declaration page; moved
+  the X-ray result above the buttons so it reads before you submit. 32 tests, build, walk at
+  phone, laptop and AI-off all pass; freeze re-taken.
+
 - 12:59 UTC: started. Surveyed SteelmanSkepticalWombat (main + 31 bot branches),
   SkepticalWombat-66 (v0 mockup), SkepticalWombatSteelman (actually a Fairytales story app),
   SkepticalWombat (empty). Read seam-v2 PROCESS.md.

@@ -1,11 +1,11 @@
 {
-  "frozenAt": "2026-11-27T13:13:11.502Z",
+  "frozenAt": "2026-11-28T16:16:38.002Z",
   "files": {
     "contracts/crossing.ts": "b4c5aa77e4f4b1e6",
     "contracts/wombat.ts": "4dd1c2067c55cffe",
-    "plan/PLAN.md": "14f8fc91a3667b4c",
+    "plan/PLAN.md": "63bdacf7cdc72762",
     "tests/api.test.ts": "a26ec0447c51f9ed",
-    "tests/rules.test.ts": "4cf80627f556a2f1",
+    "tests/rules.test.ts": "aaf94781363544dc",
     "tests/sniffer.test.ts": "def1953da9a77ce6",
     "tests/storage.test.ts": "2e1ced216170e4a6",
     "tests/wombatClient.test.ts": "67a3dea6c905666b"

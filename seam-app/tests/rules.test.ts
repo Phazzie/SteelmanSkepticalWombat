@@ -8,25 +8,21 @@ const later = (days: number) => new Date(T0.getTime() + days * 86400000);
 const run = (c: Crossing, ...actions: Action[]) => actions.reduce((acc, a) => apply(acc, a, T0), c);
 
 const fresh = () => newCrossing({ A: ' Ana ', B: 'Jordan' }, ' Who does the dishes ', T0, 'x1');
-const atDeclare = () => run(fresh(), { type: 'AGREE_DISPUTE', by: 'B' });
-const atVisa = () =>
-    run(
-        atDeclare(),
-        { type: 'DECLARE', by: 'A', text: 'I do them all.', items: ['Receipts'] },
-        { type: 'DECLARE', by: 'B', text: 'I cook.', items: [] },
-        { type: 'ADVANCE', from: 'findings' }
-    );
+const atVisa = () => run(fresh(), { type: 'AGREE_DISPUTE', by: 'B' });
 const atStamp = () =>
     run(
         atVisa(),
         { type: 'SUBMIT_VISA', by: 'A', text: 'Jordan feels cooking is the bigger job.' },
         { type: 'SUBMIT_VISA', by: 'B', text: 'Ana feels unseen.' }
     );
+const atDeclare = () =>
+    run(atStamp(), { type: 'STAMP', by: 'B', verdict: 'admitted' }, { type: 'STAMP', by: 'A', verdict: 'admitted' });
 const atTreaty = () =>
     run(
-        atStamp(),
-        { type: 'STAMP', by: 'B', verdict: 'admitted' },
-        { type: 'STAMP', by: 'A', verdict: 'admitted' },
+        atDeclare(),
+        { type: 'DECLARE', by: 'A', text: 'I do them all.', items: ['Receipts'] },
+        { type: 'DECLARE', by: 'B', text: 'I cook.', items: [] },
+        { type: 'ADVANCE', from: 'findings' },
         { type: 'ADVANCE', from: 'inspection' },
         { type: 'PROPOSE', by: 'A', text: 'Alternate nights.' },
         { type: 'PROPOSE', by: 'B', text: 'Paper plates.' },
@@ -52,8 +48,11 @@ describe('rules', () => {
         expect(c.phase).toBe('dispute');
     });
 
-    it('R3 both agreeing moves to declare', () => {
-        expect(atDeclare().phase).toBe('declare');
+    it('R3 both agreeing moves to visa: you write their side before your own', () => {
+        expect(atVisa().phase).toBe('visa');
+        expect(() => apply(atVisa(), { type: 'DECLARE', by: 'A', text: 'mine first', items: [] }, T0)).toThrow(
+            RuleError
+        );
     });
 
     it('R4 a side cannot declare twice', () => {
@@ -99,11 +98,47 @@ describe('rules', () => {
         expect(c2.phase).toBe('stamp');
     });
 
-    it('R9 both admitted moves to inspection', () => {
+    it('R9 both admitted moves to declare; nobody declares while a visa is still out', () => {
         const c = run(
             atStamp(),
             { type: 'STAMP', by: 'B', verdict: 'admitted' },
             { type: 'STAMP', by: 'A', verdict: 'admitted' }
+        );
+        expect(c.phase).toBe('declare');
+        const oneOut = run(atStamp(), { type: 'STAMP', by: 'B', verdict: 'admitted' });
+        expect(() => apply(oneOut, { type: 'DECLARE', by: 'A', text: 'mine', items: [] }, T0)).toThrow(RuleError);
+    });
+
+    it('R16 a crossing saved under the old declare-first order still finishes', () => {
+        // Old order: both declared before any visa, then findings, then visa.
+        const old: Crossing = {
+            ...atVisa(),
+            phase: 'declare'
+        };
+        let c = run(
+            old,
+            { type: 'DECLARE', by: 'A', text: 'a', items: [] },
+            { type: 'DECLARE', by: 'B', text: 'b', items: [] },
+            { type: 'ADVANCE', from: 'findings' }
+        );
+        expect(c.phase).toBe('visa');
+        c = run(
+            c,
+            { type: 'SUBMIT_VISA', by: 'A', text: 'their side' },
+            { type: 'SUBMIT_VISA', by: 'B', text: 'their side' },
+            { type: 'STAMP', by: 'B', verdict: 'admitted' },
+            { type: 'STAMP', by: 'A', verdict: 'admitted' }
+        );
+        expect(c.phase).toBe('findings');
+        expect(run(c, { type: 'ADVANCE', from: 'findings' }).phase).toBe('inspection');
+    });
+
+    it('R15 findings lead to inspection', () => {
+        const c = run(
+            atDeclare(),
+            { type: 'DECLARE', by: 'A', text: 'a', items: [] },
+            { type: 'DECLARE', by: 'B', text: 'b', items: [] },
+            { type: 'ADVANCE', from: 'findings' }
         );
         expect(c.phase).toBe('inspection');
     });
@@ -135,9 +170,9 @@ describe('rules', () => {
 
     it('R13 whoIsUp names the undeclared side, the visa writer and the judge', () => {
         expect(whoIsUp(fresh())).toBe('B');
+        expect(whoIsUp(atVisa())).toBe('A');
         expect(whoIsUp(atDeclare())).toBe('A');
         expect(whoIsUp(run(atDeclare(), { type: 'DECLARE', by: 'A', text: 'a', items: [] }))).toBe('B');
-        expect(whoIsUp(atVisa())).toBe('A');
         expect(whoIsUp(atStamp())).toBe('B');
         expect(whoIsUp(run(atStamp(), { type: 'STAMP', by: 'B', verdict: 'admitted' }))).toBe('A');
         const findings = run(

@@ -8,11 +8,13 @@ stamp your visa.
 
 1. **Statement of dispute:** agree on one boring sentence. Change a word and the other person
    has to agree again.
-2. **Customs declaration:** each of you writes your side privately (the phone is handed over
-   behind a "now serving" screen). The Wombat says what customs really found in the bag.
-3. **Visa application:** write the *other* person's side as their best lawyer would. X-ray it
-   first if you like: the Wombat checks it for smuggled complaints.
-4. **Entry decision:** they stamp it ADMITTED, or DENIED with a reason, and you try again.
+2. **Visa application, first:** before you say a word of your own side, write the *other*
+   person's side as their best lawyer would. X-ray it first if you like: the Wombat checks it
+   for smuggled complaints.
+3. **Entry decision:** they stamp it ADMITTED, or DENIED with a reason, and you try again.
+   Your own side is held at the border until you're admitted.
+4. **Customs declaration:** only now does each of you write your own side, privately (the phone
+   is handed over behind a "now serving" screen). The Wombat says what customs really found.
 5. **Inspection report, treaty proposals, read-backs and the officer's wager.**
 6. **Treaty:** one text, two signatures; editing voids the other signature. Seven days later,
    each of you says whether it held.

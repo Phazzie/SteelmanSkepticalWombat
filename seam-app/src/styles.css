@@ -462,6 +462,25 @@ textarea:focus,
     font-weight: 700;
     margin: 10px 0;
 }
+.held-tag,
+.admitted-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border: 2px dashed rgba(28, 36, 32, 0.45);
+    background: rgba(255, 255, 255, 0.55);
+    padding: 10px 12px;
+    margin: 0 0 14px;
+}
+.held-tag p {
+    margin: 0;
+    font-size: 14px;
+}
+.admitted-banner {
+    border-style: solid;
+    border-color: var(--teal);
+    font-weight: 700;
+}
 .denied-card {
     border: 2px solid var(--red);
     background: rgba(179, 38, 30, 0.06);

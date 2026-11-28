@@ -92,35 +92,12 @@ async function walk(browser, label, ctxOpts, mode) {
     await shot('dispute');
     await click('Ana agrees');
 
-    // 02 declare, private, with a sniffer hit
+    // 02 visas come first: nobody has declared anything yet. Ana x-rays first.
     await page.getByText('Now serving').waitFor();
     await shot('curtain');
     await noSideScroll('curtain');
     await step('Ana');
-    await page.getByLabel('Receipts').check();
-    await page.fill('#declaration', "You always leave the pans. I'm just saying.");
-    check(await page.getByText('K-9 unit alerted (2)').isVisible(), `[${label}] sniffer dog flags two phrases offline`);
-    await shot('declare');
-    await noSideScroll('declare');
-    await click('Seal declaration');
-    await step('Jordan');
-    await page.fill('#declaration', 'I cook every night and my back hurts by the time the pans are dirty.');
-    await click('Seal declaration');
-
-    // 03 findings
-    await page.getByRole('heading', { name: 'Customs Findings' }).waitFor();
-    if (mode === 'closed') {
-        await page.getByText('CUSTOMS CLOSED').first().waitFor();
-        check(true, `[${label}] closed customs says so honestly`);
-    } else {
-        await page.getByText('Customs found: one person').first().waitFor();
-        check(!(await page.getByText('You always leave the pans').isVisible()), `[${label}] raw declarations stay sealed`);
-    }
-    await shot('findings');
-    await click('Proceed to visa applications');
-
-    // 04 visas, Ana x-rays first
-    await step('Ana');
+    check(await page.getByText('Your own side waits').isVisible(), `[${label}] the visa desk says your own side waits`);
     await page.fill('#visa', 'I cook every night and by the time the pans are dirty my back is done. I want that counted.');
     await click('X-ray it first');
     await page.getByText(mode === 'closed' ? 'CUSTOMS CLOSED' : 'Reading: 8/10').first().waitFor();
@@ -131,9 +108,9 @@ async function walk(browser, label, ctxOpts, mode) {
     await page.fill('#visa', 'You never notice me.');
     await click('Submit application');
 
-    // 05 stamps: Jordan admits Ana; Ana denies Jordan (needs a note)
+    // 03 stamps: Jordan admits Ana; Ana denies Jordan (needs a note)
     // Jordan still holds the phone after writing, so no hand-over here.
-    await page.getByRole("heading", { name: "Entry Decision" }).waitFor();
+    await page.getByRole('heading', { name: 'Entry Decision' }).waitFor();
     if (mode !== 'closed') check(await page.getByText('Customs X-ray:').isVisible(), `[${label}] the judge sees the X-ray reading`);
     await shot('stamp');
     await click('ADMIT');
@@ -146,7 +123,7 @@ async function walk(browser, label, ctxOpts, mode) {
     await page.getByText('is refused entry').waitFor();
     await shot('slam-denied');
 
-    // rewrite
+    // rewrite, still before anyone has declared
     await step('Jordan');
     check(await page.getByText('ENTRY DENIED').isVisible(), `[${label}] the denied writer sees the stamp and the note`);
     await shot('denied');
@@ -154,6 +131,31 @@ async function walk(browser, label, ctxOpts, mode) {
     await click('Submit application');
     await step('Ana');
     await click('ADMIT');
+
+    // 04 only now: private declarations, with a sniffer hit. Ana still holds the phone.
+    await page.getByRole('heading', { name: 'Customs Declaration' }).waitFor();
+    check(await page.getByText('stamped your visa, so you’ve earned this').isVisible(), `[${label}] declaring comes after being admitted`);
+    await page.getByLabel('Receipts').check();
+    await page.fill('#declaration', "You always leave the pans. I'm just saying.");
+    check(await page.getByText('K-9 unit alerted (2)').isVisible(), `[${label}] sniffer dog flags two phrases offline`);
+    await shot('declare');
+    await noSideScroll('declare');
+    await click('Seal declaration');
+    await step('Jordan');
+    await page.fill('#declaration', 'I cook every night and my back hurts by the time the pans are dirty.');
+    await click('Seal declaration');
+
+    // 05 findings
+    await page.getByRole('heading', { name: 'Customs Findings' }).waitFor();
+    if (mode === 'closed') {
+        await page.getByText('CUSTOMS CLOSED').first().waitFor();
+        check(true, `[${label}] closed customs says so honestly`);
+    } else {
+        await page.getByText('Customs found: one person').first().waitFor();
+        check(!(await page.getByText('You always leave the pans').isVisible()), `[${label}] raw declarations stay sealed`);
+    }
+    await shot('findings');
+    await click('Proceed to inspection');
 
     // E3: reload mid-crossing resumes
     await page.getByRole('heading', { name: 'Inspection Report' }).waitFor();

@@ -52,6 +52,10 @@ export function latestVisa(c: Crossing, side: Side): VisaAttempt | undefined {
     return list[list.length - 1];
 }
 
+function bothAdmitted(c: Crossing): boolean {
+    return latestVisa(c, 'A')?.verdict === 'admitted' && latestVisa(c, 'B')?.verdict === 'admitted';
+}
+
 function need(c: Crossing, ...phases: Crossing['phase'][]) {
     if (!phases.includes(c.phase)) {
         throw new RuleError(`That can't happen at the ${c.phase} desk.`);
@@ -73,7 +77,7 @@ export function apply(input: Crossing, action: Action, now: Date): Crossing {
         case 'AGREE_DISPUTE':
             need(c, 'dispute');
             c.dispute.agreed[action.by] = true;
-            if (c.dispute.agreed.A && c.dispute.agreed.B) c.phase = 'declare';
+            if (c.dispute.agreed.A && c.dispute.agreed.B) c.phase = 'visa';
             return c;
 
         // Step 4
@@ -95,8 +99,9 @@ export function apply(input: Crossing, action: Action, now: Date): Crossing {
 
         case 'ADVANCE': {
             need(c, action.from);
-            const next = { findings: 'visa', inspection: 'propose', wager: 'treaty' } as const;
-            c.phase = next[action.from];
+            const next = { findings: 'inspection', inspection: 'propose', wager: 'treaty' } as const;
+            // A crossing saved under the old order (declare first) reaches findings with no visas yet.
+            c.phase = action.from === 'findings' && !bothAdmitted(c) ? 'visa' : next[action.from];
             return c;
         }
 
@@ -141,7 +146,11 @@ export function apply(input: Crossing, action: Action, now: Date): Crossing {
             target.verdict = action.verdict;
             const a = latestVisa(c, 'A')?.verdict;
             const b = latestVisa(c, 'B')?.verdict;
-            if (a === 'admitted' && b === 'admitted') c.phase = 'inspection';
+            // Steelman first: nobody declares their own side until their version of the other side is admitted.
+            if (a === 'admitted' && b === 'admitted') {
+                // Old-order crossings already declared; they go straight to findings.
+                c.phase = c.declarations.A && c.declarations.B ? 'findings' : 'declare';
+            }
             else if ((a === 'denied' || b === 'denied') && a !== 'pending' && b !== 'pending') c.phase = 'visa';
             return c;
         }
