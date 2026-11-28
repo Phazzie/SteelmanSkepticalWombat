@@ -73,7 +73,7 @@ export function apply(input: Crossing, action: Action, now: Date): Crossing {
         case 'AGREE_DISPUTE':
             need(c, 'dispute');
             c.dispute.agreed[action.by] = true;
-            if (c.dispute.agreed.A && c.dispute.agreed.B) c.phase = 'declare';
+            if (c.dispute.agreed.A && c.dispute.agreed.B) c.phase = 'visa';
             return c;
 
         // Step 4
@@ -95,7 +95,7 @@ export function apply(input: Crossing, action: Action, now: Date): Crossing {
 
         case 'ADVANCE': {
             need(c, action.from);
-            const next = { findings: 'visa', inspection: 'propose', wager: 'treaty' } as const;
+            const next = { findings: 'inspection', inspection: 'propose', wager: 'treaty' } as const;
             c.phase = next[action.from];
             return c;
         }
@@ -141,7 +141,8 @@ export function apply(input: Crossing, action: Action, now: Date): Crossing {
             target.verdict = action.verdict;
             const a = latestVisa(c, 'A')?.verdict;
             const b = latestVisa(c, 'B')?.verdict;
-            if (a === 'admitted' && b === 'admitted') c.phase = 'inspection';
+            // Steelman first: nobody declares their own side until their version of the other side is admitted.
+            if (a === 'admitted' && b === 'admitted') c.phase = 'declare';
             else if ((a === 'denied' || b === 'denied') && a !== 'pending' && b !== 'pending') c.phase = 'visa';
             return c;
         }

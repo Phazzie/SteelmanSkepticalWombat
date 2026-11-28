@@ -84,7 +84,7 @@ export function DisputeDesk({ c, act }: DeskProps) {
     );
 }
 
-/** Page 02: private customs declaration, one traveller at a time. */
+/** Page 04: private customs declaration, one traveller at a time, only after your visa was admitted. */
 export function DeclareDesk({ c, act, runAi }: DeskProps) {
     const me = whoIsUp(c) as Side;
     const [text, setText] = useState('');
@@ -94,9 +94,15 @@ export function DeclareDesk({ c, act, runAi }: DeskProps) {
     return (
         <>
             <DisputeBox c={c} />
+            <div className="admitted-banner">
+                <Stamp kind="admitted" small tilt={-7}>
+                    ADMITTED
+                </Stamp>
+                <span>Entry granted by {c.names[other(me)]}. Your bag is released.</span>
+            </div>
             <p className="officer-line">
-                “{c.names[me]}, this form is private. {c.names[other(me)]} never sees it. Say it the way you’d say it to
-                your best friend in the car.”
+                “{c.names[me]}, {c.names[other(me)]} stamped your visa, so you’ve earned this: your own side. This form is
+                private. {c.names[other(me)]} never sees it. Say it the way you’d say it to your best friend in the car.”
             </p>
             <fieldset className="checks">
                 <legend>Do you have anything to declare?</legend>
@@ -131,7 +137,7 @@ export function DeclareDesk({ c, act, runAi }: DeskProps) {
     );
 }
 
-/** Page 03: what customs found in both bags. The raw declarations stay sealed. */
+/** Page 05: what customs found in both bags. The raw declarations stay sealed. */
 export function FindingsDesk({ c, act, runAi, busy }: DeskProps) {
     return (
         <>
@@ -159,13 +165,13 @@ export function FindingsDesk({ c, act, runAi, busy }: DeskProps) {
                 ))}
             </div>
             <button type="button" className="btn btn-big" onClick={() => act({ type: 'ADVANCE', from: 'findings' })}>
-                Proceed to visa applications
+                Proceed to inspection
             </button>
         </>
     );
 }
 
-/** Page 04: the steelman. Apply for entry to the other side by stating their case. */
+/** Page 02: the steelman, before you have said a word of your own side. Apply for entry to the other side by stating their case. */
 export function VisaDesk({ c, act, xray }: DeskProps) {
     const me = whoIsUp(c) as Side;
     const them = other(me);
@@ -175,7 +181,6 @@ export function VisaDesk({ c, act, xray }: DeskProps) {
     const [scanning, setScanning] = useState(false);
     const [scannedText, setScannedText] = useState('');
     const [err, setErr] = useState<string | null>(null);
-    const theirFinding = c.declarations[them]?.finding;
     return (
         <>
             <DisputeBox c={c} />
@@ -183,10 +188,15 @@ export function VisaDesk({ c, act, xray }: DeskProps) {
                 “{c.names[me]}, you want into the Republic of {c.names[them]}. Entry requires one thing: state{' '}
                 {c.names[them]}’s side so well that {c.names[them]} would sign it. Not agree with it. Sign it.”
             </p>
-            {theirFinding?.status === 'ok' && (
-                <div className="hint-card">
-                    <span className="tag">Customs’ note on {c.names[them]}’s bag</span>
-                    <p>{theirFinding.text}</p>
+            {!prev && (
+                <div className="held-tag">
+                    <Stamp kind="pending" small tilt={-5}>
+                        HELD
+                    </Stamp>
+                    <p>
+                        <b>Your own side waits.</b> Your bag stays at the border. Customs won’t take your declaration
+                        until {c.names[them]} admits you.
+                    </p>
                 </div>
             )}
             {prev?.verdict === 'denied' && (
@@ -209,6 +219,10 @@ export function VisaDesk({ c, act, xray }: DeskProps) {
                 rows={7}
                 placeholder={`If I were ${c.names[them]}, I’d say…`}
             />
+            {(scanning || scan) && (
+                <FindingSlip label="X-ray: smuggled complaints" finding={scan} loading={scanning} />
+            )}
+            {scan && scannedText !== text && <p className="small">You changed it since the X-ray. The scan is for the old text.</p>}
             <div className="row">
                 <button
                     type="button"
@@ -235,16 +249,12 @@ export function VisaDesk({ c, act, xray }: DeskProps) {
                     Submit application
                 </button>
             </div>
-            {(scanning || scan) && (
-                <FindingSlip label="X-ray: smuggled complaints" finding={scan} loading={scanning} />
-            )}
-            {scan && scannedText !== text && <p className="small">You changed it since the X-ray. The scan is for the old text.</p>}
             <ErrorLine msg={err} />
         </>
     );
 }
 
-/** Page 05: the other traveller stamps the application. Only they can admit you. */
+/** Page 03: the other traveller stamps the application. Only they can admit you. */
 export function StampDesk({ c, act }: DeskProps) {
     const judge = whoIsUp(c) as Side;
     const writer = other(judge);

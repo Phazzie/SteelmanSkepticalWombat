@@ -27,7 +27,7 @@ export function buildPrompt(req: WombatRequest): { system: string; user: string 
                 };
             case 'inspection':
                 return {
-                    rules: 'Task: write the inspection report. Compare each steelman with what the other person privately declared: accurate, or a veiled complaint? Then name the real disconnect in one sharp sentence, and propose one concrete, slightly unconventional next step. Under 180 words. Use these headings on their own lines: FINDINGS, THE REAL DISPUTE, OFFICER\'S RECOMMENDATION.',
+                    rules: 'Task: write the inspection report. Each steelman was written and accepted BEFORE the other person declared their own side. Compare each steelman with what that person later declared privately: what it caught, what it missed, and whether it smuggled in a complaint. Then name the real disconnect in one sharp sentence, and propose one concrete, slightly unconventional next step. Under 180 words. Use these headings on their own lines: FINDINGS, THE REAL DISPUTE, OFFICER\'S RECOMMENDATION.',
                     user: `The dispute: ${q(req.dispute)}\n${req.names.A} privately declared: ${q(req.declarations.A)}\n${req.names.B} privately declared: ${q(req.declarations.B)}\n${req.names.A}'s steelman of ${req.names.B}: ${q(req.steelmans.A)}\n${req.names.B}'s steelman of ${req.names.A}: ${q(req.steelmans.B)}`
                 };
             case 'wager':

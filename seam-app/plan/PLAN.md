@@ -26,12 +26,12 @@ Steps:
    and starts at phase `dispute` with only the creator (A) agreed.
 2. `apply(c, action, now)` checks the action is allowed in the current phase for that side and
    throws `RuleError` with a plain-English reason otherwise. It never mutates its input.
-3. Dispute: an edit sets the editor agreed and the other not agreed; both agreed → `declare`.
-4. Declare: each side declares once; both → `findings`.
+3. Dispute: an edit sets the editor agreed and the other not agreed; both agreed → `visa`.
+4. Declare: each side declares once; both → `findings`; findings → `inspection`.
 5. Visa: a side may submit when its latest attempt is missing or denied; once both latest
    attempts are pending or admitted → `stamp`.
 6. Stamp: a side judges the *other* side's pending attempt. Any latest denied → back to
-   `visa`; both admitted → `inspection`. A denial must carry a note.
+   `visa`; both admitted → `declare` (steelman first: you state their side, and they accept it, before you state your own). A denial must carry a note.
 7. Propose and readback: once each per side; both → next phase.
 8. Treaty: an edit signs for the editor and unsigns the other; both signed → `ratified`
    with `reviewDue` 7 days later. Review only once `now >= reviewDue`, once per side.
@@ -39,19 +39,20 @@ Steps:
 Promises:
 - R1 a new crossing starts in `dispute` with A agreed and B not.
 - R2 editing the dispute un-agrees the other side.
-- R3 both agreeing moves to `declare`.
+- R3 both agreeing moves to `visa`; declaring your own side there is refused.
 - R4 a side cannot declare twice.
 - R5 both declarations move to `findings`.
 - R6 a visa can't be stamped by its own writer.
 - R7 a denial without a note is refused.
 - R8 a denied visa sends the crossing back to `visa` and only the denied side may resubmit.
-- R9 both admitted moves to `inspection`.
+- R9 both admitted moves to `declare`; nobody declares while a visa is still out.
 - R10 editing the treaty unsigns the other side; both signed → `ratified`, review due in 7 days.
 - R11 review is refused before it is due.
 - R12 `apply` does not mutate the crossing it was given.
 - R13 `whoIsUp` names the side without a declaration, the side whose visa needs writing, and
   the judge of a pending visa.
 - R14 text over 2000 characters is refused.
+- R15 findings lead to `inspection`.
 
 ### `src/core/sniffer.ts` (S6)
 Steps: 1. lower-case the text once; 2. find every listed phrase on word boundaries;

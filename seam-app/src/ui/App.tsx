@@ -24,10 +24,10 @@ const PRIVATE: Phase[] = ['declare', 'visa', 'stamp', 'propose', 'readback'];
 
 const DESKS: Record<Phase, { no: string; title: string; Desk: (p: DeskProps) => ReactNode }> = {
     dispute: { no: '01', title: 'Statement of Dispute', Desk: DisputeDesk },
-    declare: { no: '02', title: 'Customs Declaration', Desk: DeclareDesk },
-    findings: { no: '03', title: 'Customs Findings', Desk: FindingsDesk },
-    visa: { no: '04', title: 'Visa Application', Desk: VisaDesk },
-    stamp: { no: '05', title: 'Entry Decision', Desk: StampDesk },
+    visa: { no: '02', title: 'Visa Application', Desk: VisaDesk },
+    stamp: { no: '03', title: 'Entry Decision', Desk: StampDesk },
+    declare: { no: '04', title: 'Customs Declaration', Desk: DeclareDesk },
+    findings: { no: '05', title: 'Customs Findings', Desk: FindingsDesk },
     inspection: { no: '06', title: 'Inspection Report', Desk: InspectionDesk },
     propose: { no: '07', title: 'Treaty Proposals', Desk: ProposeDesk },
     readback: { no: '08', title: 'Read-Back', Desk: ReadbackDesk },
@@ -38,10 +38,10 @@ const DESKS: Record<Phase, { no: string; title: string; Desk: (p: DeskProps) => 
 
 const STATUS: Record<Phase, string> = {
     dispute: 'AT THE BORDER',
-    declare: 'IN CUSTOMS',
-    findings: 'IN CUSTOMS',
     visa: 'VISA PENDING',
     stamp: 'VISA PENDING',
+    declare: 'ADMITTED · CUSTOMS',
+    findings: 'ADMITTED · CUSTOMS',
     inspection: 'ADMITTED',
     propose: 'IN TALKS',
     readback: 'IN TALKS',
@@ -424,10 +424,11 @@ function FrontDesk({
                 </div>
                 <ol className="rules">
                     <li>Agree on what you’re actually fighting about. One boring sentence.</li>
-                    <li>Each of you declares your side, privately. Customs says what it really means.</li>
                     <li>
-                        Apply for a visa: state <i>their</i> side well enough that <i>they</i> stamp it. Only they can.
+                        Apply for a visa first: state <i>their</i> side well enough that <i>they</i> stamp it. Only they
+                        can. Your own side waits.
                     </li>
+                    <li>Admitted? Now you get to declare your own side, privately. Customs says what it really means.</li>
                     <li>Table one proposal each, read the other’s back, hear the officer’s bet.</li>
                     <li>Sign one treaty. Come back in seven days and say if it held.</li>
                 </ol>
