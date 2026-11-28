@@ -109,6 +109,30 @@ describe('rules', () => {
         expect(() => apply(oneOut, { type: 'DECLARE', by: 'A', text: 'mine', items: [] }, T0)).toThrow(RuleError);
     });
 
+    it('R16 a crossing saved under the old declare-first order still finishes', () => {
+        // Old order: both declared before any visa, then findings, then visa.
+        const old: Crossing = {
+            ...atVisa(),
+            phase: 'declare'
+        };
+        let c = run(
+            old,
+            { type: 'DECLARE', by: 'A', text: 'a', items: [] },
+            { type: 'DECLARE', by: 'B', text: 'b', items: [] },
+            { type: 'ADVANCE', from: 'findings' }
+        );
+        expect(c.phase).toBe('visa');
+        c = run(
+            c,
+            { type: 'SUBMIT_VISA', by: 'A', text: 'their side' },
+            { type: 'SUBMIT_VISA', by: 'B', text: 'their side' },
+            { type: 'STAMP', by: 'B', verdict: 'admitted' },
+            { type: 'STAMP', by: 'A', verdict: 'admitted' }
+        );
+        expect(c.phase).toBe('findings');
+        expect(run(c, { type: 'ADVANCE', from: 'findings' }).phase).toBe('inspection');
+    });
+
     it('R15 findings lead to inspection', () => {
         const c = run(
             atDeclare(),

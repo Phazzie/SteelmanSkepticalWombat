@@ -25,3 +25,7 @@ Changes to the frozen plan, contracts or tests after the freeze.
   lead to inspection. The test helpers were reordered to match.
 - **Pass-and-play kept:** there is still no two-device room, so the one-phone hand-over
   screens carry the privacy (they already did).
+- **Follow-up (Codex review on #75):** crossings saved under the old order would get stuck
+  (both admitted → declare, but both already declared). Fixed without a storage migration:
+  findings with no admitted visas go to `visa`, and both admitted with both declarations go to
+  `findings`. New promise R16 covers it.

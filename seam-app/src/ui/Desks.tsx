@@ -94,12 +94,14 @@ export function DeclareDesk({ c, act, runAi }: DeskProps) {
     return (
         <>
             <DisputeBox c={c} />
-            <div className="admitted-banner">
-                <Stamp kind="admitted" small tilt={-7}>
-                    ADMITTED
-                </Stamp>
-                <span>Entry granted by {c.names[other(me)]}. Your bag is released.</span>
-            </div>
+            {latestVisa(c, me)?.verdict === 'admitted' && (
+                <div className="admitted-banner">
+                    <Stamp kind="admitted" small tilt={-7}>
+                        ADMITTED
+                    </Stamp>
+                    <span>Entry granted by {c.names[other(me)]}. Your bag is released.</span>
+                </div>
+            )}
             <p className="officer-line">
                 “{c.names[me]}, {c.names[other(me)]} stamped your visa, so you’ve earned this: your own side. This form is
                 private. {c.names[other(me)]} never sees it. Say it the way you’d say it to your best friend in the car.”

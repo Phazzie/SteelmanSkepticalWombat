@@ -53,6 +53,7 @@ Promises:
   the judge of a pending visa.
 - R14 text over 2000 characters is refused.
 - R15 findings lead to `inspection`.
+- R16 a crossing saved under the old declare-first order still finishes (findings with no admitted visas → `visa`; both admitted with both declarations → `findings`).
 
 ### `src/core/sniffer.ts` (S6)
 Steps: 1. lower-case the text once; 2. find every listed phrase on word boundaries;
